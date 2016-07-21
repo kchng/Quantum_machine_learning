@@ -219,7 +219,7 @@ class insert_file_info :
         test_images = np.zeros((nfile_test*self.nrows,self.ncols-1))
         test_labels = np.zeros((nfile_test*self.nrows,1))
         for i in range(nfile_test) :
-            '%.1fs. Loading file %d.' % (time.time()-start_time, i+1)
+            print '%.1fs. Loading file %d.' % (time.time()-start_time, i+1)
             TEST_DATA[i*self.nrows:(i+1)*self.nrows,:] = np.loadtxt(self.full_file_path%(i+1+nfile_train))
         test_images = TEST_DATA[:,:-1].astype('int')
         test_labels = TEST_DATA[:,-1].astype('int')
@@ -231,7 +231,7 @@ class insert_file_info :
         validation_images = np.zeros((nfile_val*self.nrows,self.ncols-1))
         validation_labels = np.zeros((nfile_val*self.nrows,1))
         for i in range(nfile_test) :
-            '%.1fs. Loading file %d.' % (time.time()-start_time, i+1)
+            print '%.1fs. Loading file %d.' % (time.time()-start_time, i+1)
             VALIDATION_DATA[i*self.nrows:(i+1)*self.nrows,:] = np.loadtxt(self.full_file_path%(i+1+nfile_train+nfile_test))
         validation_images = VALIDATION_DATA[:,:-1].astype('int')
         validation_labels = VALIDATION_DATA[:,-1].astype('int')
