@@ -1,5 +1,6 @@
 import numpy as np
 import random
+import time
 import sys
 
 class insert_file_info :
