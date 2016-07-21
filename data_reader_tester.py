@@ -49,7 +49,7 @@ if Option1 :
 
     for j in range(2) :
         for i in range(640) :
-            batch = HSF1.train.next_dose()
+            batch = HSF1.train.next_batch()
             print i, (batch[1][:,0]).sum(), (batch[1][:,1]).sum()
 
 else :
