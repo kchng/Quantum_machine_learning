@@ -38,7 +38,7 @@ if shuffle_data :
 # Again, give the full file path below and make sure to modify the number formatting to %.2d.
 filename = '/home/kelvin/Desktop/Theano test/HSF_N4x4x4_L200_U9_Mu0_UniformTGrid/N4x4x4_L200_U9_Mu0_T_shuffled_%.2d.HSF.stream'
 
-filenumber = np.arange(1,41,1)
+filenumber = np.arange(1,11,1)
 
 HSF = data_reader.insert_file_info( filename, filenumber )
 
@@ -49,16 +49,14 @@ if Option1 :
 
     for j in range(2) :
         for i in range(640) :
-            batch = HSF1.train.next_batch()
+            batch = HSF1.train.next_batch(33)
             print i, (batch[1][:,0]).sum(), (batch[1][:,1]).sum()
 
 else :
     # Option 2
     HSF2 = HSF.categorize_dose_of_data()
 
-    HSF2.train.initialize_file_info_for_dose_of_data( filename, filenumber )
-
     for j in range(2) :
         for i in range(640) :
-            batch = HSF2.train.next_dose()
+            batch = HSF2.train.next_dose(33)
             print i, (batch[1][:,0]).sum(), (batch[1][:,1]).sum()
