@@ -88,9 +88,9 @@ class insert_file_info :
             if ( self._epochs_completed == 0 ) and ( start == 0 ) :
                 self.batch_size = batch_size
                 while np.modf(float(self.nrows)/self.batch_size)[0] > 0.0 :
-                     print 'Warning! Number of data per file/ batch size must be an integer.'
-                     print 'number of data per file: %d' % self.nrows
-                     print 'batch size : %d'             % self.batch_size
+                     print 'Warning! Number of data/ batch size must be an integer.'
+                     print 'number of data: %d' % self._ndata
+                     print 'batch size: %d'     % self.batch_size
                      self.batch_size = int(input('Input new batch size: '))
                 print 'batch size : %d'    % self.batch_size
                 print 'number of data: %d' % self._ndata
@@ -123,7 +123,7 @@ class insert_file_info :
                 while np.modf(float(self.nrows)/self.batch_size)[0] > 0.0 :
                      print 'Warning! Number of data per file/ dose size must be an integer.'
                      print 'number of data per file: %d' % self.nrows
-                     print 'dose size : %d'             % self.batch_size
+                     print 'dose size: %d'               % self.batch_size
                      self.batch_size = int(input('Input new dose size: '))
                 print 'dose size : %d'    % self.batch_size
                 print 'number of data: %d' % self._ndata
