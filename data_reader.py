@@ -45,7 +45,7 @@ class insert_file_info :
         
             if self.data_type == 'train' :
                 self.start_file_index   = 1
-                self.end_file_index i   = nfile_train
+                self.end_file_index     = nfile_train
                 self._ndata             = nfile_train*self.nrows
                 self.convert_to_one_hot = True
             elif self.data_type == 'test' :
@@ -88,7 +88,7 @@ class insert_file_info :
                 self.batch_size = batch_size
                 while np.modf(float(self.nrows)/self.batch_size)[0] > 0.0 :
                      print 'Warning! Number of data per file/ batch size must be an integer.'
-                     self.batch_size = int(input('Input new batch size: ')
+                     self.batch_size = int(input('Input new batch size: '))
                 print 'batch size : %d'    % self.batch_size
                 print 'number of data: %d' % self._ndata
 
@@ -119,7 +119,7 @@ class insert_file_info :
                 self.batch_size = batch_size
                 while np.modf(float(self.nrows)/self.batch_size)[0] > 0.0 :
                      print 'Warning! Number of data per file/ dose size must be an integer.'
-                     self.batch_size = int(input('Input new dose size: ')
+                     self.batch_size = int(input('Input new dose size: '))
                 print 'dose size : %d'    % self.batch_size
                 print 'number of data: %d' % self._ndata
 
