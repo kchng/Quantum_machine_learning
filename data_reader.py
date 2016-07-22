@@ -26,23 +26,24 @@ class insert_file_info :
         file_info = None
     
         def __init__(self, images, labels, nrows, nfile_train, 
-                     nfile_test, nfile_val, data_type = 'unknown') :
+                     nfile_test, nfile_val, full_file_path, data_type) :
             #self.file_into = insert_file_info()
         
             #super(DataSet,self).__init__()
             #self.insert_file_info = insert_file_info
 
-            self.data_type = data_type
-            self.batch_size = 0
-            self._ndata     = 0
-            self._images = images
-            self._labels = labels
             self._epochs_completed = 0
-            self._index_in_epoch = 0
-            self._index_in_datafile = 0
             self._file_index = 1
+            self._images = images
+            self._index_in_datafile = 0
+            self._index_in_epoch = 0
+            self._labels = labels
+            self._ndata = 0
+            self.batch_size = 0
+            self.data_type = data_type
+            self.full_file_path = full_file_path
             self.nrows = nrows
-        
+             
             if self.data_type == 'train' :
                 self.start_file_index   = 1
                 self.end_file_index     = nfile_train
@@ -88,6 +89,8 @@ class insert_file_info :
                 self.batch_size = batch_size
                 while np.modf(float(self.nrows)/self.batch_size)[0] > 0.0 :
                      print 'Warning! Number of data per file/ batch size must be an integer.'
+                     print 'number of data per file: %d' % self.nrows
+                     print 'batch size : %d'             % self.batch_size
                      self.batch_size = int(input('Input new batch size: '))
                 print 'batch size : %d'    % self.batch_size
                 print 'number of data: %d' % self._ndata
@@ -119,6 +122,8 @@ class insert_file_info :
                 self.batch_size = batch_size
                 while np.modf(float(self.nrows)/self.batch_size)[0] > 0.0 :
                      print 'Warning! Number of data per file/ dose size must be an integer.'
+                     print 'number of data per file: %d' % self.nrows
+                     print 'dose size : %d'             % self.batch_size
                      self.batch_size = int(input('Input new dose size: '))
                 print 'dose size : %d'    % self.batch_size
                 print 'number of data: %d' % self._ndata
@@ -221,13 +226,14 @@ class insert_file_info :
 
         data_sets.train      = insert_file_info.DataSet(train_images, train_labels,
                                self.nrows, nfile_train, nfile_test, nfile_val,
-                               data_type = 'train')
+                               self.full_file_path, data_type = 'train')
         data_sets.test       = insert_file_info.DataSet(test_images, test_labels,
                                self.nrows, nfile_train, nfile_test, nfile_val,
-                               data_type = 'test')
+                               self.full_file_path, data_type = 'test')
         data_sets.validation = insert_file_info.DataSet(validation_images,
                                validation_labels, self.nrows, nfile_train,
-                               nfile_test, nfile_val, data_type = 'validation')
+                               nfile_test, nfile_val, self.full_file_path,
+                               data_type = 'validation')
 
         return data_sets
  
@@ -266,13 +272,14 @@ class insert_file_info :
          
         data_sets.train      = insert_file_info.DataSet(train_images, train_labels, 
                                self.nrows, nfile_train, nfile_test, nfile_val, 
-                               data_type = 'train')
+                               self.full_file_path, data_type = 'train')
         data_sets.test       = insert_file_info.DataSet(test_images, test_labels, 
                                self.nrows, nfile_train, nfile_test, nfile_val, 
-                               data_type = 'test')
+                               self.full_file_path, data_type = 'test')
         data_sets.validation = insert_file_info.DataSet(validation_images, 
                                validation_labels, self.nrows, nfile_train, 
-                               nfile_test, nfile_val, data_type = 'validation')
+                               nfile_test, nfile_val, self.full_file_path,
+                               data_type = 'validation')
         
         return data_sets
 
