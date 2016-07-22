@@ -1,3 +1,7 @@
+# Author: Kelvin Chng
+# (c) 2016
+# San Jose State University
+
 import numpy as np
 import random
 import time
@@ -21,7 +25,8 @@ class insert_file_info :
     class DataSet(object) :
         file_info = None
     
-        def __init__(self, images, labels, data_type = 'unknown') :
+        def __init__(self, images, labels, nrows, nfile_train, 
+                     nfile_test, nfile_val, data_type = 'unknown') :
             #self.file_into = insert_file_info()
         
             #super(DataSet,self).__init__()
@@ -36,7 +41,24 @@ class insert_file_info :
             self._index_in_epoch = 0
             self._index_in_datafile = 0
             self._file_index = 1
+            self.nrows = nrows
         
+            if self.data_type == 'train' :
+                self.start_file_index   = 1
+                self.end_file_index i   = nfile_train
+                self._ndata             = nfile_train*self.nrows
+                self.convert_to_one_hot = True
+            elif self.data_type == 'test' :
+                self.start_file_index   = nfile_train + 1
+                self.end_file_index     = nfile_train + nfile_test
+                self._ndata             = nfile_test*self.nrows
+                self.convert_to_one_hot = True
+            elif self.data_type == 'validation' :
+                self.start_file_index   = nfile_train + nfile_test + 1
+                self.end_file_index     = nfile_train + nfile_test + nfile_val
+                self._ndata             = nfile_val*self.nrows
+                self.convert_to_one_hot = False
+
         #@staticmethod
         #def feed_self(self, batch_size, nrows) :
         #    self.batch_size = batch_size
@@ -59,13 +81,17 @@ class insert_file_info :
         def epochs_completed(self):
             return self._epochs_completed
             
-        def next_batch(self, batch_size = 50, ndata = 8000) :
-            self.batch_size = batch_size
-            self._ndata     = ndata
+        def next_batch(self, batch_size = 50) :
+            
             start = self._index_in_epoch
             if ( self._epochs_completed == 0 ) and ( start == 0 ) :
+                self.batch_size = batch_size
+                while np.modf(float(self.nrows)/self.batch_size)[0] > 0.0 :
+                     print 'Warning! Number of data per file/ batch size must be an integer.'
+                     self.batch_size = int(input('Input new batch size: ')
                 print 'batch size : %d'    % self.batch_size
                 print 'number of data: %d' % self._ndata
+
             self._index_in_epoch += self.batch_size
             if self._index_in_epoch > self._ndata :
                 # Number of training epochs completed
@@ -79,49 +105,6 @@ class insert_file_info :
                 assert self.batch_size <= self._ndata
             end = self._index_in_epoch
             return self._images[start:end], self._labels[start:end]
-       
-        def initialize_file_info_for_dose_of_data(self, full_file_path, 
-            filenumber, convert_test_labels_to_one_hot = True) :
-            """ full_file_path : full file path of the shuffled data
-                filenumber     : An array of file number """
-
-            print 'Initializing file information for loading small dosage of data...'
-            self.filename         = full_file_path.rsplit('\\', 1)[-1]
-            self.filename         = self.filename.rsplit('/', 1)[-1]
-            self.full_file_path   = full_file_path
-            self.nfile            = len(filenumber)
-              
-            data = np.loadtxt(self.full_file_path%1)
-            self.nrows, self.ncols = np.shape(data)
-            self.nrows, self.ncols = int(self.nrows), int(self.ncols)
-
-            # Use 10% of the data each for testing and validating, the remaining for
-            # training    
-            self._nfile_train = int(self.nfile*.8)
-            self._nfile_test  = int(self.nfile*.1)
-            self._nfile_val   = self._nfile_test
-
-            n_data_check = self.nfile - ( self._nfile_train + self._nfile_test + self._nfile_val )
-            if n_data_check > 0 :
-                self._nfile_train += n_data_check
-            elif n_data_check < 0 :
-                self._nfile_train -= n_data_check
-            
-            self._ndata           = self._nfile_train*self.nrows
-
-            if self.data_type == 'train' :
-                self.start_file_index = 1
-                self.end_file_index = self._nfile_train
-                self.convert_to_one_hot = True
-            elif self.data_type == 'test' :
-                self.start_file_index = self._nfile_train + 1
-                self.end_file_index = self._nfile_train + self._nfile_test
-                if convert_test_labels_to_one_hot :
-                    self.convert_to_one_hot = convert_test_labels_to_one_hot
-            elif self.data_type == 'validation' :
-                self.start_file_index = self._nfile_train + self._nfile_test + 1
-                self.end_file_index = self._nfile_train + self._nfile_test + self._nfile_validation
-                self.convert_to_one_hot = False
 
         def next_dose(self, batch_size = 50) :
 
@@ -131,14 +114,13 @@ class insert_file_info :
                     label_one_hot[i,label[i]] = 1
                 return label_one_hot
 
-            start = self._index_in_datafile
-            
+            start = self._index_in_datafile 
             if ( self._file_index == self.start_file_index ) and ( start == 0 ) :
                 self.batch_size = batch_size
-                if np.modf(float(self.nrows)/self.batch_size)[0] > 0.0 :
-                    self.batch_size = int(float(self.nrows)/20)
-
-                print 'batch size : %d'    % self.batch_size
+                while np.modf(float(self.nrows)/self.batch_size)[0] > 0.0 :
+                     print 'Warning! Number of data per file/ dose size must be an integer.'
+                     self.batch_size = int(input('Input new dose size: ')
+                print 'dose size : %d'    % self.batch_size
                 print 'number of data: %d' % self._ndata
 
             self._index_in_datafile += self.batch_size
@@ -200,7 +182,8 @@ class insert_file_info :
             nfile_train += n_data_check
         elif n_data_check < 0 :
             nfile_train -= n_data_check
-        
+   
+        #self.ndata = nfile_train*self.nrows     
         start_time = time.time()
     
         TRAIN_DATA = np.zeros((nfile_train*self.nrows,self.ncols))
@@ -235,17 +218,42 @@ class insert_file_info :
             VALIDATION_DATA[i*self.nrows:(i+1)*self.nrows,:] = np.loadtxt(self.full_file_path%(i+1+nfile_train+nfile_test))
         validation_images = VALIDATION_DATA[:,:-1].astype('int')
         validation_labels = VALIDATION_DATA[:,-1].astype('int')
- 
-        data_sets.train = insert_file_info.DataSet(train_images, train_labels)
-        data_sets.test = insert_file_info.DataSet(test_images, test_labels)
-        data_sets.validation = insert_file_info.DataSet(validation_images, validation_labels)
-        
+
+        data_sets.train      = insert_file_info.DataSet(train_images, train_labels,
+                               self.nrows, nfile_train, nfile_test, nfile_val,
+                               data_type = 'train')
+        data_sets.test       = insert_file_info.DataSet(test_images, test_labels,
+                               self.nrows, nfile_train, nfile_test, nfile_val,
+                               data_type = 'test')
+        data_sets.validation = insert_file_info.DataSet(validation_images,
+                               validation_labels, self.nrows, nfile_train,
+                               nfile_test, nfile_val, data_type = 'validation')
+
         return data_sets
  
     def categorize_dose_of_data(self) :
         class DataSets(object):
             pass
         data_sets = DataSets()
+
+        data = np.loadtxt(self.full_file_path%1)
+        self.nrows, self.ncols = np.shape(data)
+        self.nrows, self.ncols = int(self.nrows), int(self.ncols)
+
+        if np.modf(float(self.nrows)/self.batch_size)[0] > 0.0 :
+            self.batch_size = int(float(self.nrows)/20)
+
+        # Use 10% of the data each for testing and validating, the remaining for
+        # training    
+        nfile_train = int(self.nfile*.8)
+        nfile_test  = int(self.nfile*.1)
+        nfile_val   = nfile_test
+
+        n_data_check = self.nfile - ( nfile_train + nfile_test + nfile_val )
+        if n_data_check > 0 :
+            nfile_train += n_data_check
+        elif n_data_check < 0 :
+            nfile_train -= n_data_check
         
         train_images = np.array([]).astype('int')
         train_labels = np.array([]).astype('int')
@@ -256,8 +264,15 @@ class insert_file_info :
         validation_images = np.array([]).astype('int')
         validation_labels = np.array([]).astype('int')
          
-        data_sets.train = insert_file_info.DataSet(train_images, train_labels, data_type = 'train')
-        data_sets.test = insert_file_info.DataSet(test_images, test_labels, data_type = 'test')
-        data_sets.validation = insert_file_info.DataSet(validation_images, validation_labels, data_type = 'validation')
+        data_sets.train      = insert_file_info.DataSet(train_images, train_labels, 
+                               self.nrows, nfile_train, nfile_test, nfile_val, 
+                               data_type = 'train')
+        data_sets.test       = insert_file_info.DataSet(test_images, test_labels, 
+                               self.nrows, nfile_train, nfile_test, nfile_val, 
+                               data_type = 'test')
+        data_sets.validation = insert_file_info.DataSet(validation_images, 
+                               validation_labels, self.nrows, nfile_train, 
+                               nfile_test, nfile_val, data_type = 'validation')
         
-        return data_sets                    
+        return data_sets
+
