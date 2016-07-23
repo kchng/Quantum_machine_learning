@@ -17,7 +17,7 @@ samples_per_T_test=500 # int(raw_input('samples_per_T'))  #250 # number of sampl
 
 numberlabels=2
 
-use_input_data_py = True
+use_input_data_py = False
 if use_input_data_py :
     import input_data
     mnist = input_data.read_data_sets(numberlabels,lx,L,'txt', one_hot=True)
@@ -30,29 +30,6 @@ else :
     HSF = data_reader.insert_file_info(filename,filenumber)
     mnist = HSF.categorize_data()
     #mnist = HSF.categorize_dose_of_data()
-
-batch = mnist.train.next_batch(50)
-x1 = batch[0]
-#print x1
-#print np.shape(x1)
-x1_image = tf.reshape(x1, [-1,4,4,4,200])
-#print x1_image.eval()
-print tf.shape(x1_image).eval()
-
-x2 = mnist.test.images[0,:]
-x3 = mnist.test.labels[0,:]
-#x2 = batch1[0]
-#x3 = batch1[1]
-#mnist.test.images[ii,:].reshape(1,lx*lx*lx*L),mnist.test.labels[ii,:].reshape((1,numberlabels))
-print tf.shape(x2).eval()
-print tf.shape(x3).eval()
-x4 = tf.reshape(x2, [1,lx*lx*lx*L])
-print tf.shape(x4).eval()
-#x5 = tf.reshape(x3, [1, numberlabels])
-#print tf.shape(x5).eval()
-
-#print np.shape(x_image)
-sys.exit()
 
 print "reading sets ok"
 
