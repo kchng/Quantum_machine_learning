@@ -87,7 +87,7 @@ class insert_file_info :
             start = self._index_in_epoch
             if ( self._epochs_completed == 0 ) and ( start == 0 ) :
                 self.batch_size = batch_size
-                while np.modf(float(self.nrows)/self.batch_size)[0] > 0.0 :
+                while np.modf(float(self._ndata)/self.batch_size)[0] > 0.0 :
                      print 'Warning! Number of data/ batch size must be an integer.'
                      print 'number of data: %d' % self._ndata
                      print 'batch size: %d'     % self.batch_size
