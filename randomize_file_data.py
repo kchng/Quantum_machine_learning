@@ -33,14 +33,16 @@ class insert_file_info :
             print ('Warning! Make sure there are same number of files above and below the boundary. Exiting...')
             sys.exit()
         
-    def randomize_data(self, memory_size = 'medium') :
+    def randomize_data(self, memory_size = 'medium', shuffle_data = False) :
+        print 'Memory setting: %s'%memory_size
         """ Import and randomize data, then export to new files """
         half_nfile = int(self.nfile/2.)
         half_nrows = int(self.nrows/2.)
         shuffled_data = np.zeros((half_nfile*self.nrows, self.ncols+1))
         shuffled_indices = np.arange(0,half_nfile*self.nrows,1)
-        random.shuffle(shuffled_indices)
-        random.shuffle(shuffled_indices)
+        if shuffle_data :
+            random.shuffle(shuffled_indices)
+            random.shuffle(shuffled_indices)
 
         start_time = time.time()
         if memory_size == 'medium' :
@@ -77,8 +79,9 @@ class insert_file_info :
             shuffled_indices = np.arange(0,self.nrows,1)
             for i in range(self.nfile) :
                 print '%.1f' % (time.time()-start_time),'s. Reshuffling', self.newfilename%(i+1),'.'
-                random.shuffle(shuffled_indices)
-                random.shuffle(shuffled_indices)
+                if shuffle_data :
+                    random.shuffle(shuffled_indices)
+                    random.shuffle(shuffled_indices)
                 data = np.loadtxt(self.newfilename%(i+1))
                 data = data[shuffled_indices]
                 with open(self.newfilename%(i+1),'w') as f:
@@ -101,7 +104,8 @@ class insert_file_info :
             print '\nShuffling data...\n'
             shuffled_data[half_nfile*self.nrows:,-1:] = 1
             shuffled_data = shuffled_data[shuffled_indices]
-            
+            shuffled_data = shuffled_data[shuffled_indices]
+
             for i in range(self.nfile) :
                 print 'Saving shuffled data %d.'%(i+1)
                 with open(self.newfilename%(i+1),'w') as f:
