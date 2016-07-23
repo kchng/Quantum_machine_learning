@@ -1,7 +1,7 @@
 import sys
 import numpy as np
 import data_reader
-
+import time
 
 filename = '/home/kelvin/Desktop/Theano test/HSF_N4x4x4_L200_U9_Mu0_UniformTGrid/N4x4x4_L200_U9_Mu0_T_shuffled_%.2d.HSF.stream'
 filename_weight_bias = "./wb.ckpt"
@@ -9,7 +9,11 @@ filenumber = np.arange(1,41,1)
 HSF = data_reader.insert_file_info( filename, filenumber )
 HSF = HSF.categorize_data()
 
-n_feature_map1,n_feature_map2 = 64,128
+i_training = 6400
+n_feature_map1 = 64
+n_feature_map2 = 64
+n_feature_map3 = 8
+n_feature_map4 = 8
 n_spin = 4
 n_time_dimension = 200
 n_output_neuron = 2
@@ -85,16 +89,17 @@ def max_pool_2x2x2(x):
     return tf.nn.max_pool3d(x, ksize=[1,2,2,2,1], 
                           strides=[1,2,2,2,1], padding='SAME')
 
-# First Convolution Layer
+# First Convolution Layer + ReLU ======================================================
+
 # The convolution will compute n features for each mxmxm block. Its weight
-# tensor will have a shape of [filter_Depth, filter_height, filter_width, 
+# tensor will have a shape of [filter_depth, filter_height, filter_width, 
 # in_channels, out_channels]].
 W_conv1 = weight_variable([filter_d,filter_h,filter_w,n_time_dimension,n_feature_map1])
 b_conv1 = bias_variable([n_feature_map1])
 
-# To apply the layer, first reshape x to a 4D tensor, with the second and
-# third dimensions correspondings to image width and height, and the final
-# dimension corresponding to the number of color channels.
+# To apply the layer, first reshape x to a 5D tensor, with the second,
+# third, and fourth dimensions correspondings to image depth, height, and 
+# width, and the final dimension corresponding to the number of color channels.
 x_image = tf.reshape(x, [-1,n_spin,n_spin,n_spin,n_time_dimension])
 
 # Then convolve x_image with the weight tensor, add the bias, apply the
@@ -102,33 +107,47 @@ x_image = tf.reshape(x, [-1,n_spin,n_spin,n_spin,n_time_dimension])
 # image has been reduced to 14x14.
 # n_feature_map1 x n_spin x n_spin x n_spin
 h_conv1 = tf.nn.relu(conv3d(x_image, W_conv1) + b_conv1)
-# n_feature_map1 x n_spin/2 x n_spin/2 x n_spini/2
-h_pool1 = max_pool_2x2x2(h_conv1)
 
-# Second Convolution Layer
+# Second Convolution Layer + ReLU ====================================================
 W_conv2 = weight_variable([filter_d,filter_h,filter_w,n_feature_map1,n_feature_map2])
 b_conv2 = bias_variable([n_feature_map2])
+h_conv2 = tf.nn.relu(conv3d(h_conv1, W_conv2) + b_conv2)
 
-# n_feature_map2 x n_spin/2 x n_spin/2 x n_spini/2
-h_conv2 = tf.nn.relu(conv3d(h_pool1, W_conv2) + b_conv2) 
+# n_feature_map1 x n_spin/2 x n_spin/2 x n_spin/2
+h_pool1 = max_pool_2x2x2(h_conv2)
+
+# Third Convolution Layer + ReLU =====================================================
+W_conv3 = weight_variable([filter_d,filter_h,filter_w,n_feature_map2,n_feature_map3])
+b_conv3 = bias_variable([n_feature_map3])
+
+# n_feature_map2 x n_spin/2 x n_spin/2 x n_spin/2
+h_conv3 = tf.nn.relu(conv3d(h_pool1, W_conv3) + b_conv3)
+
+# Fourth Convolution Layer + ReLU ====================================================
+W_conv4 = weight_variable([filter_d,filter_h,filter_w,n_feature_map3,n_feature_map4])
+b_conv4 = bias_variable([n_feature_map4])
+
+# n_feature_map2 x n_spin/2 x n_spin/2 x n_spin/2
+h_conv4 = tf.nn.relu(conv3d(h_conv3, W_conv4) + b_conv4)
+
 # n_feature_map2 x n_spin/4 x n_spin/4 x n_spini/4
-h_pool2 = max_pool_2x2x2(h_conv2)
+# h_pool2 = max_pool_2x2x2(h_conv2)
 
 # Fully-connected Layer
-# Now add a fully-connected layer with n_fully_connected_neuron neurons to 
-# allow processing on the entire image. The tensor from the pooling layer 
+# Now add a fully-connected layer with n_fully_connected_neurons to 
+# allow processing on the entire image. The tensor from the convolution layer 
 # is reshaped into a batch of vectors, multiply by a weight matrix, add a
 # bias, and apply a ReLU.
-W_fc1 = weight_variable([n_feature_map2*n_spin/4*n_spin/4*n_spin/4, n_fully_connected_neuron])
+W_fc1 = weight_variable([n_feature_map4*n_spin/2*n_spin/2*n_spin/2, n_fully_connected_neuron])
 b_fc1 = bias_variable([n_fully_connected_neuron])
 
-h_pool2_flat = tf.reshape(h_pool2, [-1, n_feature_map2*n_spin/4*n_spin/4*n_spin/4])
-h_fc1 = tf.nn.relu(tf.matmul(h_pool2_flat, W_fc1) + b_fc1)
+h_conv4_flat = tf.reshape(h_conv4, [-1, n_feature_map4*n_spin/2*n_spin/2*n_spin/2])
+h_fc1 = tf.nn.relu(tf.matmul(h_conv4_flat, W_fc1) + b_fc1)
 
 # Dropout
 # To reduce overfitting, dropout will be applied before the readout layer.
 # We'll create a placeholder for the probability that a neuron's output is
-# kept during dropout. This allows us tro turn dropout on during training, and
+# kept during dropout. This allows us to turn dropout on during training, and
 # turn it off during testing. TensorFlow's tf.nn.dropout op automatically 
 # handles scaling neuron outputs in addition to masking them, so droput just 
 # works without any additional scaling.
@@ -156,21 +175,26 @@ sess.run(tf.initialize_all_variables())
 # train_step operation can be run using feed_dict to replace the placeholder
 # tensors x and y_ with the training examples. Note: any tensor in the
 # computation graph can be replcaed using feed_dict.
-for i in range(3200):
-    batch = HSF.train.next_batch(ndata=32000)
+print '\n'
+print 'Initialize training...'
+start_time = time.time()
+for i in range(i_training):
+    batch = HSF.train.next_batch()
     if i%100 == 0 :
         train_accuracy = accuracy.eval(feed_dict={
                          x: batch[0], y_: batch[1], keep_prob: 1.0})
         test_accuracy = accuracy.eval(feed_dict={
                          x: HSF.test.images, y_: HSF.test.labels, keep_prob: 1.0})
-        print("step %d, training accuracy %g, test accuracy %g"%(i, train_accuracy, test_accuracy))
+        print("%.2fs, step %d, training accuracy %g, test accuracy %g"%(time.time()-start_time,
+        train_accuracy, test_accuracy))
     train_step.run(feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
 
 print("test accuracy %g"%accuracy.eval(feed_dict={
     x: HSF.test.images, y_: HSF.test.labels, keep_prob: 1.0}))
 
-save_weights_and_biases = tf.train.Saver([W_conv1, b_conv1, W_conv2, b_conv2, W_fc1, b_fc1, W_fc2, b_fc2])
+# Save all the variables.
+save_weights_and_biases = tf.train.Saver([W_conv1, b_conv1, W_conv2, b_conv2, 
+                                          W_conv3, b_conv3, W_conv4, b_conv4, 
+                                          W_fc1, b_fc1, W_fc2, b_fc2])
 saver.save(sess,filename_weight_bias)
-
-
 
