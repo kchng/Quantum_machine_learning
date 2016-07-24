@@ -115,21 +115,18 @@ b_conv2 = bias_variable([n_feature_map2])
 h_conv2 = tf.nn.relu(conv3d(h_conv1, W_conv2) + b_conv2)
 
 # Max pooling layer ==================================================================
-# n_feature_map1 x n_spin/2 x n_spin/2 x n_spin/2
+# After applying max pooling , the size is reduced to n_feature_map1 x n_spin/2 x 
+# n_spin/2 x n_spin/2
 h_pool1 = max_pool_2x2x2(h_conv2)
 
 # Third Convolution Layer + ReLU =====================================================
 W_conv3 = weight_variable([filter_d,filter_h,filter_w,n_feature_map2,n_feature_map3])
 b_conv3 = bias_variable([n_feature_map3])
-
-# n_feature_map2 x n_spin/2 x n_spin/2 x n_spin/2
 h_conv3 = tf.nn.relu(conv3d(h_pool1, W_conv3) + b_conv3)
 
 # Fourth Convolution Layer + ReLU ====================================================
 W_conv4 = weight_variable([filter_d,filter_h,filter_w,n_feature_map3,n_feature_map4])
 b_conv4 = bias_variable([n_feature_map4])
-
-# n_feature_map2 x n_spin/2 x n_spin/2 x n_spin/2
 h_conv4 = tf.nn.relu(conv3d(h_conv3, W_conv4) + b_conv4)
 
 # n_feature_map2 x n_spin/4 x n_spin/4 x n_spini/4
