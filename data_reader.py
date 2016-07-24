@@ -10,12 +10,13 @@ import sys
 class insert_file_info :
     
     def __init__(self, full_file_path, filenumber, batch_size = 50, 
-        use_random_seed = False ) :
+        use_random_seed = False, include_validation_data = False ) :
         """ full_file_path : full file path of the shuffled data
             filenumber     : An array of file number """
         self.filename         = full_file_path.rsplit('\\', 1)[-1]
         self.filename         = self.filename.rsplit('/', 1)[-1]
-        self.full_file_path   = full_file_path
+        self.full_file_path   = full_file_pathi
+        self.include_validation_data = include_validation_data
         self.nrows            = 0
         self.ncols            = 0
         self.nfile            = len(filenumber)
@@ -230,12 +231,18 @@ class insert_file_info :
         
         if np.modf(float(self.nrows)/self.batch_size)[0] > 0.0 :
             self.batch_size = int(float(self.nrows)/20)    
-            
-        # Use 10% of the data each for testing and validating, the remaining for
-        # training    
-        nfile_train = int(self.nfile*.8)
-        nfile_test  = int(self.nfile*.1)
-        nfile_val   = nfile_test
+           
+        if include_validation_data :
+           # Use 10% of the data each for testing and validating, the remaining for
+           # training    
+           nfile_train = int(self.nfile*.8)
+           nfile_test  = int(self.nfile*.1)
+           nfile_val   = nfile_test
+        else :
+           # Use 10% of the data each for testing, the remaining for training    
+           nfile_train = int(self.nfile*.9)
+           nfile_test  = int(self.nfile*.1)
+           nfile_val   = 0
     
         n_data_check = self.nfile - ( nfile_train + nfile_test + nfile_val )
         if n_data_check > 0 :
@@ -269,15 +276,16 @@ class insert_file_info :
         if convert_test_labels_to_one_hot :
             test_labels = convert_to_one_hot(test_labels)
     
-        print 'Loading %d/%d files for validation data...' % (nfile_val,self.nfile)
-        VALIDATION_DATA = np.zeros((nfile_val*self.nrows,self.ncols))
-        validation_images = np.zeros((nfile_val*self.nrows,self.ncols-1))
-        validation_labels = np.zeros((nfile_val*self.nrows,1))
-        for i in range(nfile_test) :
-            print '%.1fs. Loading file %d.' % (time.time()-start_time, i+1)
-            VALIDATION_DATA[i*self.nrows:(i+1)*self.nrows,:] = np.loadtxt(self.full_file_path%(i+1+nfile_train+nfile_test))
-        validation_images = VALIDATION_DATA[:,:-1].astype('int')
-        validation_labels = VALIDATION_DATA[:,-1].astype('int')
+        if include_validation_data :
+            print 'Loading %d/%d files for validation data...' % (nfile_val,self.nfile)
+            VALIDATION_DATA = np.zeros((nfile_val*self.nrows,self.ncols))
+            validation_images = np.zeros((nfile_val*self.nrows,self.ncols-1))
+            validation_labels = np.zeros((nfile_val*self.nrows,1))
+            for i in range(nfile_test) :
+                print '%.1fs. Loading file %d.' % (time.time()-start_time, i+1)
+                VALIDATION_DATA[i*self.nrows:(i+1)*self.nrows,:] = np.loadtxt(self.full_file_path%(i+1+nfile_train+nfile_test))
+            validation_images = VALIDATION_DATA[:,:-1].astype('int')
+            validation_labels = VALIDATION_DATA[:,-1].astype('int')
 
         data_sets.train      = insert_file_info.DataSet(train_images, train_labels,
                                self.nrows, nfile_train, nfile_test, nfile_val,
@@ -285,10 +293,11 @@ class insert_file_info :
         data_sets.test       = insert_file_info.DataSet(test_images, test_labels,
                                self.nrows, nfile_train, nfile_test, nfile_val,
                                self.full_file_path, data_type = 'test')
-        data_sets.validation = insert_file_info.DataSet(validation_images,
-                               validation_labels, self.nrows, nfile_train,
-                               nfile_test, nfile_val, self.full_file_path,
-                               data_type = 'validation')
+        if include_validation_data :
+            data_sets.validation = insert_file_info.DataSet(validation_images,
+                                   validation_labels, self.nrows, nfile_train,
+                                   nfile_test, nfile_val, self.full_file_path,
+                                   data_type = 'validation')
 
         return data_sets
  
@@ -304,26 +313,33 @@ class insert_file_info :
         if np.modf(float(self.nrows)/self.batch_size)[0] > 0.0 :
             self.batch_size = int(float(self.nrows)/20)
 
-        # Use 10% of the data each for testing and validating, the remaining for
-        # training    
-        nfile_train = int(self.nfile*.8)
-        nfile_test  = int(self.nfile*.1)
-        nfile_val   = nfile_test
+        if include_validation_data :
+           # Use 10% of the data each for testing and validating, the remaining for
+           # training    
+           nfile_train = int(self.nfile*.8)
+           nfile_test  = int(self.nfile*.1)
+           nfile_val   = nfile_test
+        else :
+           # Use 10% of the data each for testing, the remaining for training    
+           nfile_train = int(self.nfile*.9)
+           nfile_test  = int(self.nfile*.1)
+           nfile_val   = 0
 
         n_data_check = self.nfile - ( nfile_train + nfile_test + nfile_val )
         if n_data_check > 0 :
             nfile_train += n_data_check
         elif n_data_check < 0 :
             nfile_train -= n_data_check
-        
+         
         train_images = np.array([]).astype('int')
         train_labels = np.array([]).astype('int')
 
         test_images = np.array([]).astype('int')
         test_labels = np.array([]).astype('int') 
 
-        validation_images = np.array([]).astype('int')
-        validation_labels = np.array([]).astype('int')
+        if include_validation_data :
+            validation_images = np.array([]).astype('int')
+            validation_labels = np.array([]).astype('int')
          
         data_sets.train      = insert_file_info.DataSet(train_images, train_labels, 
                                self.nrows, nfile_train, nfile_test, nfile_val, 
@@ -331,10 +347,11 @@ class insert_file_info :
         data_sets.test       = insert_file_info.DataSet(test_images, test_labels, 
                                self.nrows, nfile_train, nfile_test, nfile_val, 
                                self.full_file_path, data_type = 'test')
-        data_sets.validation = insert_file_info.DataSet(validation_images, 
-                               validation_labels, self.nrows, nfile_train, 
-                               nfile_test, nfile_val, self.full_file_path,
-                               data_type = 'validation')
+        if include_validation_data :
+            data_sets.validation = insert_file_info.DataSet(validation_images, 
+                                   validation_labels, self.nrows, nfile_train, 
+                                   nfile_test, nfile_val, self.full_file_path,
+                                   data_type = 'validation')
         
         return data_sets
 
