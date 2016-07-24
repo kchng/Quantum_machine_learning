@@ -18,7 +18,7 @@ n_feature_map4 = 8
 n_spin = 4
 n_time_dimension = 200
 n_output_neuron = 2
-n_fully_connected_neuron = 1024
+n_fully_connected_neuron = 30
 
 filter_d = 2
 filter_h = filter_d
