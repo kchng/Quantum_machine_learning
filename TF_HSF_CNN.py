@@ -185,8 +185,7 @@ for i in range(i_training):
                          x: batch[0], y_: batch[1], keep_prob: 1.0})
         test_accuracy = accuracy.eval(feed_dict={
                          x: HSF.test.images, y_: HSF.test.labels, keep_prob: 1.0})
-        print("%.2fs, step %d, training accuracy %g, test accuracy %g"%(time.time()-start_time,
-        train_accuracy, test_accuracy))
+        print("%.2fs, step %d, training accuracy %g, test accuracy %g"%(time.time()-start_time,i,train_accuracy, test_accuracy))
     train_step.run(feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
 
 print("test accuracy %g"%accuracy.eval(feed_dict={
