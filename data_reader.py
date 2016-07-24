@@ -240,8 +240,8 @@ class insert_file_info :
            nfile_val   = nfile_test
         else :
            # Use 10% of the data each for testing, the remaining for training    
-           nfile_train = int(self.nfile*.9)
-           nfile_test  = int(self.nfile*.1)
+           nfile_train = int(self.nfile*.85)
+           nfile_test  = int(self.nfile*.15)
            nfile_val   = 0
     
         n_data_check = self.nfile - ( nfile_train + nfile_test + nfile_val )
@@ -321,8 +321,8 @@ class insert_file_info :
            nfile_val   = nfile_test
         else :
            # Use 10% of the data each for testing, the remaining for training    
-           nfile_train = int(self.nfile*.9)
-           nfile_test  = int(self.nfile*.1)
+           nfile_train = int(self.nfile*.85)
+           nfile_test  = int(self.nfile*.15)
            nfile_val   = 0
 
         n_data_check = self.nfile - ( nfile_train + nfile_test + nfile_val )

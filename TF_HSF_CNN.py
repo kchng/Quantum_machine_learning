@@ -5,19 +5,20 @@ import time
 
 filename = '/home/kelvin/Desktop/Theano test/HSF_N4x4x4_L200_U9_Mu0_UniformTGrid/N4x4x4_L200_U9_Mu0_T_shuffled_%.2d.HSF.stream'
 filename_weight_bias = "./wb.ckpt"
+filename_measure = "./HSF_measure.dat"
 filenumber = np.arange(1,41,1)
 HSF = data_reader.insert_file_info( filename, filenumber )
 HSF = HSF.categorize_data()
 
 i_training = 6400
-n_feature_map1 = 64
-n_feature_map2 = 64
+n_feature_map1 = 32
+n_feature_map2 = 32
 n_feature_map3 = 8
 n_feature_map4 = 8
 n_spin = 4
 n_time_dimension = 200
 n_output_neuron = 2
-n_fully_connected_neuron = 128
+n_fully_connected_neuron = 1024
 
 filter_d = 2
 filter_h = filter_d
@@ -52,20 +53,20 @@ def bias_variable(shape):
     initial = tf.constant(0.1, shape=shape)
     return tf.Variable(initial)
 
-def conv2d(x, W):
+def conv2d(x, W, pad='SAME'):
     # The convolutions uses a stride of one and are zero padded so that
     # the output is the same size as the input.
     # tf.nn.conv2d(input, filter, strides, padding, 
     #              use_cudnn_on_gpu=None, data_format=None, name=None)
-    return tf.nn.conv2d(x, W, strides=[1,1,1,1], padding='SAME')
+    return tf.nn.conv2d(x, W, strides=[1,1,1,1], padding=pad)
 
-def conv3d(x, W):
+def conv3d(x, W, pad='SAME'):
     # The convolutions uses a stride of one and are zero padded so that
     # the output is the same size as the input.
     # tf.nn.conv3d(input, filter, strides, padding, name=None)
-    return tf.nn.conv3d(x, W, strides = [1,1,1,1,1], padding='SAME')
+    return tf.nn.conv3d(x, W, strides = [1,1,1,1,1], padding=pad)
 
-def max_pool_2x2(x):
+def max_pool_2x2(x, pad='SAME'):
     # Max pooling over 2x2 blocks.
     # tf.nn.max_pool(value, ksize, strides, padding, 
     #                data_format='NHWC', name=None)
@@ -75,9 +76,9 @@ def max_pool_2x2(x):
     # strides : The stride of the sliding window for each dimension of
     #           the input tnesor.
     return tf.nn.max_pool(x, ksize=[1,2,2,1], 
-                          strides=[1,2,2,1], padding='SAME')
+                          strides=[1,2,2,1], padding=pad)
 
-def max_pool_2x2x2(x):
+def max_pool_2x2x2(x, pad='SAME'):
     # Max pooling over 2x2 blocks.
     # tf.nn.max_pool(input, ksize, strides, padding, 
     #                data_format='NHWC', name=None)
@@ -87,7 +88,7 @@ def max_pool_2x2x2(x):
     # strides : The stride of the sliding window for each dimension of
     #           the input tnesor.
     return tf.nn.max_pool3d(x, ksize=[1,2,2,2,1], 
-                          strides=[1,2,2,2,1], padding='SAME')
+                          strides=[1,2,2,2,1], padding=pad)
 
 # First Convolution Layer + ReLU ======================================================
 
@@ -113,6 +114,7 @@ W_conv2 = weight_variable([filter_d,filter_h,filter_w,n_feature_map1,n_feature_m
 b_conv2 = bias_variable([n_feature_map2])
 h_conv2 = tf.nn.relu(conv3d(h_conv1, W_conv2) + b_conv2)
 
+# Max pooling layer ==================================================================
 # n_feature_map1 x n_spin/2 x n_spin/2 x n_spin/2
 h_pool1 = max_pool_2x2x2(h_conv2)
 
@@ -161,9 +163,11 @@ b_fc2 = bias_variable([n_output_neuron])
 
 y_conv = tf.nn.softmax(tf.matmul(h_fc1_drop, W_fc2) + b_fc2)
 
+# learning rate, eta
+eta = 1e-4
 # Train and Evaluate the Model
 cross_entropy = tf.reduce_mean(-tf.reduce_sum(y_ * tf.log(y_conv), reduction_indices=[1]))
-train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
+train_step = tf.train.AdamOptimizer( eta ).minimize(cross_entropy)
 correct_prediction = tf.equal(tf.argmax(y_conv,1), tf.argmax(y_,1))
 accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 # Before Variables can be used within a session, they must be initialized
@@ -178,22 +182,32 @@ sess.run(tf.initialize_all_variables())
 print '\n'
 print 'Initialize training...'
 start_time = time.time()
-for i in range(i_training):
-    batch = HSF.train.next_batch()
-    if i%100 == 0 :
-        train_accuracy = accuracy.eval(feed_dict={
-                         x: batch[0], y_: batch[1], keep_prob: 1.0})
-        test_accuracy = accuracy.eval(feed_dict={
-                         x: HSF.test.images, y_: HSF.test.labels, keep_prob: 1.0})
-        print("%.2fs, step %d, training accuracy %g, test accuracy %g"%(time.time()-start_time,i,train_accuracy, test_accuracy))
-    train_step.run(feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
+
+with open(filename_measure, "w") as f:
+
+    for i in range(i_training):
+        batch = HSF.train.next_batch()
+        if i%100 == 0 :
+            train_accuracy = accuracy.eval(feed_dict={
+                             x: batch[0], y_: batch[1], keep_prob: 1.0})
+            test_accuracy = accuracy.eval(feed_dict={
+                             x: HSF.test.images, y_: HSF.test.labels, keep_prob: 1.0})
+            Cost = cross_entropy.eval(feed_dict={x: batch[0], y_: batch[1], keep_prob: 1.0})
+            print("%.2fs, step %d, training accuracy %g, test accuracy %g, cost %g"%(time.time()-start_time,i,train_accuracy, test_accuracy, Cost))
+            f.write('%d %g %g %g\n'%(i,train_accuracy,test_accuracy,Cost))
+        train_step.run(feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
 
 print("test accuracy %g"%accuracy.eval(feed_dict={
     x: HSF.test.images, y_: HSF.test.labels, keep_prob: 1.0}))
 
 # Save all the variables.
-save_weights_and_biases = tf.train.Saver([W_conv1, b_conv1, W_conv2, b_conv2, 
-                                          W_conv3, b_conv3, W_conv4, b_conv4, 
+save_weights_and_biases = tf.train.Saver([W_conv1, b_conv1, W_conv2, b_conv2,
+                                          W_conv3, b_conv3, W_conv4, b_conv4,
                                           W_fc1, b_fc1, W_fc2, b_fc2])
-saver.save(sess,filename_weight_bias)
+
+# Save all the variables.
+save_weights_and_biases = tf.train.Saver([W_conv1, b_conv1, W_fc1, b_fc1, W_fc2, b_fc2])
+save_path = save_weights_and_biases.save(sess,filename_weight_bias)
+
+
 

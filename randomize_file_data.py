@@ -36,10 +36,11 @@ class insert_file_info :
     def randomize_data(self, memory_size = 'medium', shuffle_data = False) :
         print 'Memory setting: %s'%memory_size
         """ Import and randomize data, then export to new files """
-        half_nfile = int(self.nfile/2.)
+        nfile_below = self.filenumber_below
+        nfile_above = self.filenumber_above
         half_nrows = int(self.nrows/2.)
-        shuffled_data = np.zeros((half_nfile*self.nrows, self.ncols+1))
-        shuffled_indices = np.arange(0,half_nfile*self.nrows,1)
+        shuffled_data = np.zeros((nfile_below*self.nrows, self.ncols+1))
+        shuffled_indices = np.arange(0,nfile_below*self.nrows,1)
         if shuffle_data :
             random.shuffle(shuffled_indices)
             random.shuffle(shuffled_indices)
@@ -47,7 +48,7 @@ class insert_file_info :
         start_time = time.time()
         if memory_size == 'medium' :
         
-            for i in range(half_nfile) :
+            for i in range(nfile_below) :
                 print '%.1f' % (time.time()-start_time),'s. Opening', self.filename % self.filenumber_below[i], '...'
                 shuffled_data[i*self.nrows:(i+1)*self.nrows,:self.ncols] = np.genfromtxt( 
                         self.full_file_path % self.filenumber_below[i], dtype = int, 
@@ -59,11 +60,17 @@ class insert_file_info :
                 print 'Saving shuffled data %d.'%(i+1)
                 with open(self.newfilename%(i+1),'w') as f:
                     #f.write('\n\n')
-                    np.savetxt(f, shuffled_data[i*half_nrows:(i+1)*half_nrows,:], fmt='%d')
+                    np.savetxt(f, shuffled_data[i*nfile_below:(i+1)*nfile_below,:], fmt='%d')
                                 
-            for i in range(half_nfile) :
+            shuffled_data = np.zeros((nfile_above*self.nrows, self.ncols+1))
+            shuffled_indices = np.arange(0,nfile_above*self.nrows,1)
+            if shuffle_data :
+                random.shuffle(shuffled_indices)
+                random.shuffle(shuffled_indices)
+
+            for i in range(nfile_above) :
                 print '%.1f' % (time.time()-start_time),'s. Opening', self.filename % self.filenumber_above[i], '...'
-                shuffled_data[i*self.nrows:(i+1)*self.nrows,:self.ncols] = np.genfromtxt( 
+                shuffled_data[i*self.nrows:(i+1)*self.nrows,:] = np.genfromtxt( 
                         self.full_file_path % self.filenumber_above[i], dtype = int, 
                         delimiter=self.Delimiter, skip_header=0, skip_footer=0)
             print '\nShuffling data...\n'
@@ -74,7 +81,7 @@ class insert_file_info :
                 print 'Saving shuffled data %d.'%(i+1)
                 with open(self.newfilename%(i+1),'a') as f:
                     #f.write('\n\n')
-                    np.savetxt(f, shuffled_data[i*half_nrows:(i+1)*half_nrows,:], fmt='%d')
+                    np.savetxt(f, shuffled_data[i*nfile_above:(i+1)*nfile_above,:], fmt='%d')
 
             shuffled_indices = np.arange(0,self.nrows,1)
             for i in range(self.nfile) :
@@ -89,20 +96,20 @@ class insert_file_info :
                         
         if memory_size == 'high' :
         
-            for i in range(half_nfile) :
+            for i in range(nfile_below) :
                 print '%.1f' % (time.time()-start_time),'s. Opening', self.filename % self.filenumber_below[i], '...'
                 shuffled_data[i*self.nrows:(i+1)*self.nrows,:self.ncols] = np.genfromtxt( 
                         self.full_file_path % self.filenumber_below[i], dtype = int, 
                         delimiter=self.Delimiter, skip_header=0, skip_footer=0)
             print '\nShuffling data...\n'
     
-            for i in range(half_nfile) :
+            for i in range(nfile_above) :
                 print '%.1f' % (time.time()-start_time),'s. Opening', self.filename % self.filenumber_above[i], '...'
                 shuffled_data[(i+half_nfile)*self.nrows:(i+half_nfile+1)*self.nrows,:self.ncols] = np.genfromtxt(
                         self.full_file_path % self.filenumber_above[i], dtype = int,
                         delimiter=self.Delimiter, skip_header=0, skip_footer=0)
             print '\nShuffling data...\n'
-            shuffled_data[half_nfile*self.nrows:,-1:] = 1
+            shuffled_data[nfile_below*self.nrows:,-1:] = 1
             shuffled_data = shuffled_data[shuffled_indices]
             shuffled_data = shuffled_data[shuffled_indices]
 
