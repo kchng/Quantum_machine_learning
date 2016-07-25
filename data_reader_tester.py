@@ -4,8 +4,9 @@ import numpy as np
 import time
 import sys
 
+# If this is your first time running the code, please set shuffle_data to True.
 shuffle_data = True
-Option1      = True
+Option1      = False
 
 # First, shuffle the data :
 
@@ -38,13 +39,12 @@ if shuffle_data :
 # Again, give the full file path below and make sure to modify the number formatting to %.2d.
 filename = '/home/kelvin/Desktop/Theano test/HSF_N4x4x4_L200_U9_Mu0_UniformTGrid/N4x4x4_L200_U9_Mu0_T_shuffled_%.2d.HSF.stream'
 
-filenumber = np.arange(1,11,1)
+filenumber = np.arange(1,41,1)
 
 HSF = data_reader.insert_file_info( filename, filenumber )
 
 if Option1 :
     # Option 1
-
     HSF1 = HSF.categorize_data()
 
     for j in range(2) :
