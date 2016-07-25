@@ -5,6 +5,7 @@ import time
 import sys
 
 # If this is your first time running the code, please set shuffle_data to True.
+# ATTENTION! If your computer has less than 8 GB of memory, use the 'medium' setting, otherwise, set it to 'high'.
 shuffle_data = True
 Option1      = False
 
@@ -29,7 +30,7 @@ if shuffle_data :
     initialize = randomize_file_data.insert_file_info( filename, dtau, boundary = 0.36 )
 
     # Start randomizing data. Sit back and have a cup of coffee, it needs a bit of time.
-    initialize.randomize_data(shuffle_data=True)
+    initialize.randomize_data(memory_size = 'medium',shuffle_data=True)
 
 
 
