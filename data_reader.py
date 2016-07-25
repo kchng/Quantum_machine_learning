@@ -44,22 +44,26 @@ class insert_file_info :
             self.data_type = data_type
             self.full_file_path = full_file_path
             self.nrows = nrows
+            self.shuffle_index_dose = np.arange(0,self.nrows,1)
              
             if self.data_type == 'train' :
                 self.start_file_index   = 1
                 self.end_file_index     = nfile_train
                 self._ndata             = nfile_train*self.nrows
                 self.convert_to_one_hot = True
+                self.shuffle_index = np.arange(0,self._ndata,1)
             elif self.data_type == 'test' :
                 self.start_file_index   = nfile_train + 1
                 self.end_file_index     = nfile_train + nfile_test
                 self._ndata             = nfile_test*self.nrows
                 self.convert_to_one_hot = True
+                self.shuffle_index = np.arange(0,self._ndata,1)
             elif self.data_type == 'validation' :
                 self.start_file_index   = nfile_train + nfile_test + 1
                 self.end_file_index     = nfile_train + nfile_test + nfile_val
                 self._ndata             = nfile_val*self.nrows
                 self.convert_to_one_hot = False
+                self.shuffle_index = np.arange(0,self._ndata,1)
 
         #@staticmethod
         #def feed_self(self, batch_size, nrows) :
@@ -101,8 +105,9 @@ class insert_file_info :
                 # Number of training epochs completed
                 self._epochs_completed += 1
                 # Shuffle data
-                random.shuffle(self._images)
-                random.shuffle(self._labels)
+                random.shuffle(self.shuffle_index)
+                self._images = self._images[self.shuffle_index]
+                self._labels = self._labels[self.shuffle_index]
                 # Reinitialize conunter
                 start = 0
                 self._index_in_epoch = self.batch_size
@@ -150,8 +155,9 @@ class insert_file_info :
                 if self.convert_to_one_hot :
                     self._labels = convert_to_one_hot(labels)
                 # Shufle data
-                random.shuffle(self._images)
-                random.shuffle(self._labels)
+                random.shuffle(self.shuffle_index_dose)
+                self._images = self._images[self.shuffle_index_dose]
+                self._labels = self._labels[self.shuffle_index_dose]
 
             if self._file_index > self.end_file_index :
                 # Number of training epochs completed
@@ -183,6 +189,7 @@ class insert_file_info :
                      self.batch_size = int(input('Input new dose size: '))
                 print 'dose size : %d'    % self.batch_size
                 print 'number of data: %d' % self._ndata
+                self.shuffle_index_dose_old = np.arange(0,self.batch_size,1)
 
             self._index_in_datafile += self.batch_size
             if self._index_in_datafile > self.nrows :
@@ -209,8 +216,9 @@ class insert_file_info :
             if self.convert_to_one_hot :
                 self._labels = convert_to_one_hot(labels)
             # Shufle data
-            random.shuffle(self._images)
-            random.shuffle(self._labels)
+            random.shuffle(self.shuffle_index_dose_old)
+            self._images = self._images[self.shuffle_index_dose_old]
+            self._labels = self._labels[self.shuffle_index_dose_old]
 
             return self._images, self._labels
 
