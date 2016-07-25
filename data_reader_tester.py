@@ -29,7 +29,7 @@ if shuffle_data :
     initialize = randomize_file_data.insert_file_info( filename, dtau, boundary = 0.36 )
 
     # Start randomizing data. Sit back and have a cup of coffee, it needs a bit of time.
-    initialize.randomize_data()
+    initialize.randomize_data(shuffle_data=True)
 
 
 
