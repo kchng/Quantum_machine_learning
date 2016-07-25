@@ -1,19 +1,19 @@
 import tensorflow as tf
 import sys
 
-sess = tf.InteractiveSession()
 
 L=200
 lx=4 #=int(raw_input('lx'))
 V4d=lx*lx*lx*L # 4d volume
 
 training=5000  #=int(raw_input('training'))
-bsize=400 #=int(raw_input('bsize'))
+bsize=4200 #=int(raw_input('bsize'))
 
 # how does the data look like
 Ntemp=41 #int(raw_input('Ntemp'))   #20 # number of different temperatures used in the simulation
 samples_per_T=500  #int(raw_input('samples_per_T'))  #250 # number of samples per temperature value
 samples_per_T_test=500 # int(raw_input('samples_per_T'))  #250 # number of samples per temperature value
+
 
 numberlabels=2
 
@@ -26,12 +26,23 @@ else :
     import data_reader
     import numpy as np
     filename = '/home/kelvin/Desktop/Theano test/HSF_N4x4x4_L200_U9_Mu0_UniformTGrid/N4x4x4_L200_U9_Mu0_T_shuffled_%.2d.HSF.stream'
-    filenumber = np.arange(1,11,1)
+    filenumber = np.arange(1,41,1)
     HSF = data_reader.insert_file_info(filename,filenumber)
     mnist = HSF.categorize_data()
     #mnist = HSF.categorize_dose_of_data()
 
 print "reading sets ok"
+
+#print mnist.train.images
+
+#print sum(mnist.train.labels[:,0])
+#print sum(mnist.train.labels[:,1])
+
+#print mnist.test.images
+
+#print sum(mnist.test.labels[:,0])
+#print sum(mnist.test.labels[:,1])
+#sys.exit()
 
 #sys.exit("pare aqui")
 
@@ -53,6 +64,7 @@ def conv3d(x, W):
 x = tf.placeholder("float", shape=[None, (lx)*(lx)*(lx)*L]) # placeholder for the spin configurations
 #x = tf.placeholder("float", shape=[None, lx*lx*2]) #with padding and no PBC conv net
 y_ = tf.placeholder("float", shape=[None, numberlabels])
+
 
 #first layer 
 # convolutional layer # 2x2x2 patch size, 2 channel (2 color), 64 feature maps computed
@@ -117,57 +129,64 @@ accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
 sess = tf.Session()
 sess.run(tf.initialize_all_variables())
 
-for i in range(training):
-  batch = mnist.train.next_batch(bsize)
-  # batch = mnist.train.next_dose(bsize)
-  if i%100 == 0:
-    train_accuracy = sess.run(accuracy,feed_dict={
+filename_measure = "./HSF_measure.dat"
+with open(filename_measure, "w") as f:
+
+  for i in range(training):
+    batch = mnist.train.next_batch(bsize)
+    if i%100 == 0:
+      train_accuracy = sess.run(accuracy,feed_dict={
         x:batch[0], y_: batch[1], keep_prob: 1.0})
-    print "step %d, training accuracy %g"%(i, train_accuracy)
-    print "test accuracy %g"%sess.run(accuracy, feed_dict={
-    x: mnist.test.images, y_: mnist.test.labels, keep_prob: 1.0}) 
-    #print "test Trick accuracy %g"%sess.run(accuracy, feed_dict={
-    #x: mnist.test_Trick.images, y_: mnist.test_Trick.labels, keep_prob: 1.0})  
+      test_accuracy = sess.run(accuracy, feed_dict={
+        x: mnist.test.images, y_: mnist.test.labels, keep_prob: 1.0})
+      Cost = sess.run(cross_entropy, feed_dict={x: batch[0], y_: batch[1], keep_prob: 1.0})
+      print "step %d, training accuracy %g, test accuracy %g, cost %g"%(i, train_accuracy, test_accuracy, Cost)
+      f.write('%d %g %g %g\n'%(i,train_accuracy,test_accuracy,Cost))
+      #print "test accuracy %g"%sess.run(accuracy, feed_dict={
+      #x: mnist.test.images, y_: mnist.test.labels, keep_prob: 1.0}) 
+      #print "test Trick accuracy %g"%sess.run(accuracy, feed_dict={
+      #x: mnist.test_Trick.images, y_: mnist.test_Trick.labels, keep_prob: 1.0})  
 #  train_step.run(feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
-  sess.run(train_step, feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
+    sess.run(train_step, feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
+
 print "test accuracy %g"%sess.run(accuracy, feed_dict={
     x: mnist.test.images, y_: mnist.test.labels, keep_prob: 1.0})
-
-
 
 saver = tf.train.Saver([W_conv1, b_conv1, W_fc1,b_fc1,W_fc2,b_fc2])
 save_path = saver.save(sess, "./model.ckpt")
 print "Model saved in file: ", save_path
 
+sys.exit()
+
 #producing data to get the plots we like
 
-#f = open('nnout.dat', 'w')
+f = open('nnout.dat', 'w')
 
 #output of neural net
-#ii=0
-#for i in range(Ntemp):
-#  av=0.0
-#  for j in range(samples_per_T_test):
-#        batch=(mnist.test.images[ii,:].reshape(1,lx*lx*lx*L),mnist.test.labels[ii,:].reshape((1,numberlabels)))
-#        res=sess.run(y_conv,feed_dict={x: batch[0], y_: batch[1],keep_prob: 1.0})
-#        av=av+res
+ii=0
+for i in range(Ntemp):
+  av=0.0
+  for j in range(samples_per_T_test):
+        batch=(mnist.test.images[ii,:].reshape(1,lx*lx*lx*L),mnist.test.labels[ii,:].reshape((1,numberlabels)))
+        res=sess.run(y_conv,feed_dict={x: batch[0], y_: batch[1],keep_prob: 1.0})
+        av=av+res
         #print ii, res
-#        ii=ii+1
-#  av=av/samples_per_T_test
-#  f.write(str(i)+' '+str(av[0,0])+' '+str(av[0,1])+"\n") 
-#f.close() 
+        ii=ii+1
+  av=av/samples_per_T_test
+  f.write(str(i)+' '+str(av[0,0])+' '+str(av[0,1])+"\n") 
+f.close() 
 
 
-#f = open('acc.dat', 'w')
+f = open('acc.dat', 'w')
 
 # accuracy vs temperature
-#for ii in range(Ntemp):
-#  batch=(mnist.test.images[ii*samples_per_T_test:ii*samples_per_T_test+samples_per_T_test,:].reshape(samples_per_T_test,L*lx*lx*lx), mnist.test.labels[ii*samples_per_T_test:ii*samples_per_T_test+samples_per_T_test,:].reshape((samples_per_T_test,numberlabels)) )
-#  train_accuracy = sess.run(accuracy,feed_dict={
-#        x:batch[0], y_: batch[1], keep_prob: 1.0})
-#  f.write(str(ii)+' '+str(train_accuracy)+"\n")
-#f.close()
-
+for ii in range(Ntemp):
+  batch=(mnist.test.images[ii*samples_per_T_test:ii*samples_per_T_test+samples_per_T_test,:].reshape(samples_per_T_test,L*lx*lx*lx), mnist.test.labels[ii*samples_per_T_test:ii*samples_per_T_test+samples_per_T_test,:].reshape((samples_per_T_test,numberlabels)) )
+  train_accuracy = sess.run(accuracy,feed_dict={
+        x:batch[0], y_: batch[1], keep_prob: 1.0})
+  f.write(str(ii)+' '+str(train_accuracy)+"\n")
+f.close()
+  
 
 #producing data to get the plots we like
 
