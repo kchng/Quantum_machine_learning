@@ -10,7 +10,7 @@ if train_nn == False :
   print 'Process: recognition.'
   # If the following is set to True, training will start if no checkpoint is found in the
   # current directory.
-  countine_training_if_ckpt_not_found = True
+  continue_training_if_ckpt_not_found = True
 else :
   print 'Process: training.'
   continue_training_using_previous_model = True
@@ -148,7 +148,7 @@ filename_weight_bias = "./model_new.ckpt"
 
 # Check to see if the checkpoint is located in the current file directory before restoring.
 if train_nn == False :
-  if os.path.isfile(filename_weight_bias) == False and countine_training_if_ckpt_not_found :
+  if os.path.isfile(filename_weight_bias) == False and continue_training_if_ckpt_not_found :
     print '%s is not found in the current directory, starting training...' % filename_weight_bias
     train_nn = True
   else : 
