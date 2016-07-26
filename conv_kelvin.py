@@ -1,22 +1,35 @@
 import tensorflow as tf
 import sys
+import time
+import os.path
 
+# Set train_nn to True for training the neural network or False for performing recognition. 
+train_nn = False
+if train_nn == False :
+  print 'Process: recognition.'
+  # If the following is set to True, training will start if no checkpoint is found in the
+  # current directory.
+  countine_training_if_ckpt_not_found = True
+else :
+  print 'Process: training.'
+
+sess = tf.InteractiveSession()
 
 L=200
 lx=4 #=int(raw_input('lx'))
 V4d=lx*lx*lx*L # 4d volume
 
-training=5000  #=int(raw_input('training'))
-bsize=4200 #=int(raw_input('bsize'))
+training=2000  #=int(raw_input('training'))
+bsize=50 #=int(raw_input('bsize'))
 
 # how does the data look like
 Ntemp=41 #int(raw_input('Ntemp'))   #20 # number of different temperatures used in the simulation
 samples_per_T=500  #int(raw_input('samples_per_T'))  #250 # number of samples per temperature value
 samples_per_T_test=500 # int(raw_input('samples_per_T'))  #250 # number of samples per temperature value
 
-
 numberlabels=2
 
+# Set the following to True for using Juan's input_data.py or False for using Kelvin's data_reader.py.
 use_input_data_py = False
 if use_input_data_py :
     import input_data
@@ -25,24 +38,21 @@ if use_input_data_py :
 else :
     import data_reader
     import numpy as np
-    filename = '/home/kelvin/Desktop/Theano test/HSF_N4x4x4_L200_U9_Mu0_UniformTGrid/N4x4x4_L200_U9_Mu0_T_shuffled_%.2d.HSF.stream'
-    filenumber = np.arange(1,41,1)
+    filename = './N4x4x4_L200_U9_Mu0_T_shuffled_%.2d.HSF.stream'
+    filenumber = np.arange(1,11,1)
     HSF = data_reader.insert_file_info(filename,filenumber)
     mnist = HSF.categorize_data()
     #mnist = HSF.categorize_dose_of_data()
+    dtau = np.array([0.060, 0.075, 0.090, 0.105, 0.120, 0.135, 0.150, 0.165, \
+                 0.180, 0.195, 0.210, 0.225, 0.240, 0.255, 0.270, 0.285, \
+                 0.300, 0.315, 0.330, 0.345, 0.510, 0.660, 0.810, \
+                 0.960, 1.110, 1.260, 1.410, 1.560, 1.710, 1.860, 2.010, \
+                 2.160, 2.310, 2.460, 2.610, 2.760, 2.910, 3.060, 3.210, \
+                 3.360])
+
+n_train_data = float(len(mnist.train.labels))
 
 print "reading sets ok"
-
-#print mnist.train.images
-
-#print sum(mnist.train.labels[:,0])
-#print sum(mnist.train.labels[:,1])
-
-#print mnist.test.images
-
-#print sum(mnist.test.labels[:,0])
-#print sum(mnist.test.labels[:,1])
-#sys.exit()
 
 #sys.exit("pare aqui")
 
@@ -118,19 +128,42 @@ y_conv=tf.nn.softmax(tf.matmul(h_fc1_drop, W_fc2) + b_fc2)
 
 #Train and Evaluate the Model
 # cost function to minimize
-
-#cross_entropy = -tf.reduce_sum(y_*tf.log(y_conv))
-cross_entropy = -tf.reduce_sum(y_*tf.log(tf.clip_by_value(y_conv,1e-10,1.0)))
-
+if use_input_data_py :
+  #cross_entropy = -tf.reduce_sum(y_*tf.log(y_conv))
+  cross_entropy = -tf.reduce_sum(y_*tf.log(tf.clip_by_value(y_conv,1e-10,1.0)))
+else :
+  cross_entropy = tf.reduce_mean(-tf.reduce_sum(y_ * tf.log(y_conv), reduction_indices=[1]))
 train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
 correct_prediction = tf.equal(tf.argmax(y_conv,1), tf.argmax(y_,1))
 accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
 
-sess = tf.Session()
+#sess = tf.Session()
 sess.run(tf.initialize_all_variables())
 
-filename_measure = "./HSF_measure.dat"
-with open(filename_measure, "w") as f:
+filename_weight_bias = "./model.ckpt"
+
+# Check to see if the checkpoint is located in the current file directory before restoring.
+if train_nn == False :
+  if os.path.isfile(filename_weight_bias) == False and countine_training_if_ckpt_not_found :
+    print '%s is not found in the current directory, starting training...' % filename_weight_bias
+    train_nn = True
+  else : 
+    while not(os.path.isfile(filename_weight_bias)) :
+      print '%s is not found in the current directory.' %filename_weight_bias
+      filename_weight_bias = raw_input('Input checkpoint model: ')
+      filename_weight_bias = './' + filename_weight_bias
+    train_nn = False
+
+start_time = time.time()
+
+if train_nn :
+
+  print 'Total number of training epochs: %g' %(training/n_train_data)
+  start_time = time.time()
+
+  test_accuracy_tmp = 0
+  filename_measure = "./HSF_measure.dat"
+  Table_measure = np.zeros(( int(training/100), 4))
 
   for i in range(training):
     batch = mnist.train.next_batch(bsize)
@@ -140,53 +173,124 @@ with open(filename_measure, "w") as f:
       test_accuracy = sess.run(accuracy, feed_dict={
         x: mnist.test.images, y_: mnist.test.labels, keep_prob: 1.0})
       Cost = sess.run(cross_entropy, feed_dict={x: batch[0], y_: batch[1], keep_prob: 1.0})
-      print "step %d, training accuracy %g, test accuracy %g, cost %g"%(i, train_accuracy, test_accuracy, Cost)
-      f.write('%d %g %g %g\n'%(i,train_accuracy,test_accuracy,Cost))
-      #print "test accuracy %g"%sess.run(accuracy, feed_dict={
-      #x: mnist.test.images, y_: mnist.test.labels, keep_prob: 1.0}) 
-      #print "test Trick accuracy %g"%sess.run(accuracy, feed_dict={
-      #x: mnist.test_Trick.images, y_: mnist.test_Trick.labels, keep_prob: 1.0})  
-#  train_step.run(feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
+      print "%.2fs, epoch %.2f, training accuracy %g, test accuracy %g, cost %g"%(time.time()-start_time,i/n_train_data, train_accuracy, test_accuracy, Cost)
+      Table_measure[i/100,0] = i/n_train_data
+      Table_measure[i/100,1] = train_accuracy
+      Table_measure[i/100,2] = test_accuracy
+      Table_measure[i/100,3] = Cost
+      # To avoid multiple training, the model is saved when the difference between testing 
+      # accuracy and training accuracy doesn't exceed a set value (it is set to 0.05 here)
+      # and if the current testing accuracy is higher than the previous. 
+      delta_accuracy = abs(train_accuracy - test_accuracy)
+      if test_accuracy > test_accuracy_tmp :
+        test_accuracy_tmp = test_accuracy
+        if delta_accuracy <= 0.05 :
+          saver = tf.train.Saver([W_conv1, b_conv1, W_fc1,b_fc1,W_fc2,b_fc2])
+          save_path = saver.save(sess, filename_weight_bias)
+          check_model = tf.reduce_mean(W_conv1).eval()
+          best_epoch = i/n_train_data
+       #print "test accuracy %g"%sess.run(accuracy, feed_dict={
+       #x: mnist.test.images, y_: mnist.test.labels, keep_prob: 1.0}) 
+       #print "test Trick accuracy %g"%sess.run(accuracy, feed_dict={
+       #x: mnist.test_Trick.images, y_: mnist.test_Trick.labels, keep_prob: 1.0})  
     sess.run(train_step, feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
 
-print "test accuracy %g"%sess.run(accuracy, feed_dict={
-    x: mnist.test.images, y_: mnist.test.labels, keep_prob: 1.0})
-
-saver = tf.train.Saver([W_conv1, b_conv1, W_fc1,b_fc1,W_fc2,b_fc2])
-save_path = saver.save(sess, "./model.ckpt")
-print "Model saved in file: ", save_path
-
-sys.exit()
-
-#producing data to get the plots we like
-
-f = open('nnout.dat', 'w')
-
-#output of neural net
-ii=0
-for i in range(Ntemp):
-  av=0.0
-  for j in range(samples_per_T_test):
-        batch=(mnist.test.images[ii,:].reshape(1,lx*lx*lx*L),mnist.test.labels[ii,:].reshape((1,numberlabels)))
-        res=sess.run(y_conv,feed_dict={x: batch[0], y_: batch[1],keep_prob: 1.0})
-        av=av+res
-        #print ii, res
-        ii=ii+1
-  av=av/samples_per_T_test
-  f.write(str(i)+' '+str(av[0,0])+' '+str(av[0,1])+"\n") 
-f.close() 
-
-
-f = open('acc.dat', 'w')
-
-# accuracy vs temperature
-for ii in range(Ntemp):
-  batch=(mnist.test.images[ii*samples_per_T_test:ii*samples_per_T_test+samples_per_T_test,:].reshape(samples_per_T_test,L*lx*lx*lx), mnist.test.labels[ii*samples_per_T_test:ii*samples_per_T_test+samples_per_T_test,:].reshape((samples_per_T_test,numberlabels)) )
+  # Final check to save the best model.
   train_accuracy = sess.run(accuracy,feed_dict={
-        x:batch[0], y_: batch[1], keep_prob: 1.0})
-  f.write(str(ii)+' '+str(train_accuracy)+"\n")
-f.close()
+      x:batch[0], y_: batch[1], keep_prob: 1.0})
+  test_accuracy = sess.run(accuracy, feed_dict={
+      x: mnist.test.images, y_: mnist.test.labels, keep_prob: 1.0})
+  Cost = sess.run(cross_entropy, feed_dict={x: batch[0], y_: batch[1], keep_prob: 1.0})
+  delta_accuracy = abs(train_accuracy - test_accuracy)
+  if test_accuracy > test_accuracy_tmp :
+    if delta_accuracy <= 0.05 :
+      saver = tf.train.Saver([W_conv1, b_conv1, W_fc1,b_fc1,W_fc2,b_fc2])
+      save_path = saver.save(sess, filename_weight_bias)
+      check_model = tf.reduce_mean(W_conv1).eval()
+      best_epoch = training/n_train_data
+
+  print "epoch %.2f, training accuracy %g, test accuracy %g, cost %g"%(i/n_train_data, train_accuracy, test_accuracy, Cost)
+
+  print 'Best training epoch: %g'%best_epoch
+
+  print "Model saved in file: ", save_path
+
+  # To proceed, load the best (saved) model instead of the last training model.
+  saver.restore(sess, filename_weight_bias)
+
+  # Check if the saved model and the restored model are the same.
+  if check_model != tf.reduce_mean(W_conv1).eval() :
+    print 'Warning! Best training model and the restored model is incompatible. Exiting...'
+    sys.exit()
+
+  # Save the measurements:
+  # first column : Training epochs
+  # second column: Training accuracy
+  # third column : Testing accuracy
+  # fourth column: Cost
+  np.savetxt(filename_measure, Table_measure)
+
+else :
+  saver = tf.train.Saver([W_conv1, b_conv1, W_fc1,b_fc1,W_fc2,b_fc2])
+
+# To proceed, load the best (saved) model instead of the last training model.
+saver.restore(sess, filename_weight_bias)
+
+print 'Performing recognition...'
+if use_input_data_py :
+
+    #producing data to get the plots we like
+
+    f = open('nnout.dat', 'w')
+
+    #output of neural net
+    ii=0
+    for i in range(Ntemp):
+      av=0.0
+      for j in range(samples_per_T_test):
+            batch=(mnist.test.images[ii,:].reshape(1,lx*lx*lx*L),mnist.test.labels[ii,:].reshape((1,numberlabels)))
+            res=sess.run(y_conv,feed_dict={x: batch[0], y_: batch[1],keep_prob: 1.0})
+            av=av+res
+            #print ii, res
+            ii=ii+1
+      av=av/samples_per_T_test
+      f.write(str(i)+' '+str(av[0,0])+' '+str(av[0,1])+"\n") 
+    f.close() 
+
+
+    f = open('acc.dat', 'w')
+
+    # accuracy vs temperature
+    for ii in range(Ntemp):
+      batch=(mnist.test.images[ii*samples_per_T_test:ii*samples_per_T_test+samples_per_T_test,:].reshape(samples_per_T_test,L*lx*lx*lx), mnist.test.labels[ii*samples_per_T_test:ii*samples_per_T_test+samples_per_T_test,:].reshape((samples_per_T_test,numberlabels)) )
+      train_accuracy = sess.run(accuracy,feed_dict={
+            x:batch[0], y_: batch[1], keep_prob: 1.0})
+      f.write(str(ii)+' '+str(train_accuracy)+"\n")
+    f.close()
   
+else :
+
+    # Both the output of neural network and accuracy will be saved in one single file. The first
+    # column has the temperature, the second holds the output of the second output neuron,
+    # the third holds the output of the first neuron, the fourth holds the accuracy, and the last
+    # holds the number of test data used for each temperature.
+    Table = np.zeros(( len(dtau), 5))
+    Table[:,0] = dtau
+
+    for i in range(len(mnist.test.temps)) :
+        # Output of neural net vs temperature
+        Table[mnist.test.temps[i],1] += np.argmax(sess.run(y_conv, feed_dict={x: mnist.test.images[i,:].reshape(1,V4d), keep_prob: 1.0}))
+        # Accuracy vs temperature
+        Table[mnist.test.temps[i],3] += sess.run(accuracy, feed_dict={x: mnist.test.images[i,:].reshape(1,V4d), y_: mnist.test.labels[i,:].reshape(1,numberlabels), keep_prob: 1.0})
+        Table[mnist.test.temps[i],-1] += 1
+
+    Table[:,1] = Table[:,1]/Table[:,-1].astype('float')
+    Table[:,2] = 1.0-Table[:,1]
+    Table[:,3] = Table[:,3]/Table[:,-1].astype('float')
+
+    filename_result = "./result.dat"
+    np.savetxt(filename_result, Table)
+    print "Result saved in file: ", filename_result
 
 #producing data to get the plots we like
 
