@@ -43,7 +43,7 @@ else :
     import data_reader
     import numpy as np
     filename = './N4x4x4_L200_U9_Mu0_T_shuffled_%.2d.HSF.stream'
-    filenumber = np.arange(1,11,1)
+    filenumber = np.arange(1,41,1)
     HSF = data_reader.insert_file_info(filename,filenumber)
     mnist = HSF.categorize_data()
     #mnist = HSF.categorize_dose_of_data()
