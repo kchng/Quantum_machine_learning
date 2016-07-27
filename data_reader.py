@@ -10,7 +10,8 @@ import sys
 class insert_file_info :
     
     def __init__(self, full_file_path, filenumber, batch_size = 50, 
-        use_random_seed = False, include_validation_data = False ) :
+        use_random_seed = False, include_validation_data = False, 
+        performing_classification = False) :
         """ full_file_path : full file path of the shuffled data
             filenumber     : An array of file number """
         self.filename         = full_file_path.rsplit('\\', 1)[-1]
@@ -22,6 +23,9 @@ class insert_file_info :
         self.nfile            = len(filenumber)
         self.batch_size       = batch_size
         self.current_index    = 0
+        self.performing_classification = performing_classification
+        if self.performing_classification :
+            self.include_validation_data = False
 
     class DataSet(object) :
         file_info = None
@@ -265,18 +269,20 @@ class insert_file_info :
    
         #self.ndata = nfile_train*self.nrows     
         start_time = time.time()
-    
-        TRAIN_DATA = np.zeros((nfile_train*self.nrows,self.ncols))
-        train_images = np.zeros((nfile_train*self.nrows,self.ncols-1))
-        train_labels = np.zeros((nfile_train*self.nrows,1))
-        print 'Loading %d/%d files for training data...' % (nfile_train,self.nfile)
-        for i in range(nfile_train) :
-            print '%.1fs. Loading file %d.' % (time.time()-start_time, i+1)
-            TRAIN_DATA[i*self.nrows:(i+1)*self.nrows,:] = np.loadtxt(self.full_file_path%(i+1))
-        train_images = TRAIN_DATA[:,:-2].astype('int')
-        train_labels = TRAIN_DATA[:,-2].astype('int')
-        train_labels = convert_to_one_hot(train_labels)
-        train_temps = []        
+       
+        if not(self.performing_classification) :
+
+            TRAIN_DATA = np.zeros((nfile_train*self.nrows,self.ncols))
+            train_images = np.zeros((nfile_train*self.nrows,self.ncols-1))
+            train_labels = np.zeros((nfile_train*self.nrows,1))
+            print 'Loading %d/%d files for training data...' % (nfile_train,self.nfile)
+            for i in range(nfile_train) :
+                print '%.1fs. Loading file %d.' % (time.time()-start_time, i+1)
+                TRAIN_DATA[i*self.nrows:(i+1)*self.nrows,:] = np.loadtxt(self.full_file_path%(i+1))
+            train_images = TRAIN_DATA[:,:-2].astype('int')
+            train_labels = TRAIN_DATA[:,-2].astype('int')
+            train_labels = convert_to_one_hot(train_labels)
+            train_temps = []        
 
         print 'Loading %d/%d files for test data...' % (nfile_test,self.nfile)
         TEST_DATA = np.zeros((nfile_test*self.nrows,self.ncols))
@@ -303,9 +309,10 @@ class insert_file_info :
             validation_labels = VALIDATION_DATA[:,-2].astype('int')
             validation_temps  = VALIDATION_DATA[:,-1].astype('int')
 
-        data_sets.train      = insert_file_info.DataSet(train_images, train_labels,
-                               train_temps, self.nrows, nfile_train, nfile_test, 
-                               nfile_val, self.full_file_path, data_type = 'train')
+        if not(self.performing_classification) :
+            data_sets.train      = insert_file_info.DataSet(train_images, train_labels,
+                                   train_temps, self.nrows, nfile_train, nfile_test, 
+                                   nfile_val, self.full_file_path, data_type = 'train')
         data_sets.test       = insert_file_info.DataSet(test_images, test_labels,
                                test_temps, self.nrows, nfile_train, nfile_test, 
                                nfile_val, self.full_file_path, data_type = 'test')
@@ -346,10 +353,12 @@ class insert_file_info :
             nfile_train += n_data_check
         elif n_data_check < 0 :
             nfile_train -= n_data_check
-         
-        train_images = np.array([]).astype('int')
-        train_labels = np.array([]).astype('int')
-        train_temps = []
+        
+        if not(self.performing_classification) :
+ 
+            train_images = np.array([]).astype('int')
+            train_labels = np.array([]).astype('int')
+            train_temps = []
 
         start_time = time.time()
 
@@ -387,9 +396,10 @@ class insert_file_info :
         #    validation_labels = np.array([]).astype('int')
         #    validation_temps  = np.array([]).astype('int')
 
-        data_sets.train      = insert_file_info.DataSet(train_images, train_labels,
-                               train_temps, self.nrows, nfile_train, nfile_test, 
-                               nfile_val, self.full_file_path, data_type = 'train')
+        if not(self.performing_classification) :
+            data_sets.train      = insert_file_info.DataSet(train_images, train_labels,
+                                   train_temps, self.nrows, nfile_train, nfile_test, 
+                                   nfile_val, self.full_file_path, data_type = 'train')
         data_sets.test       = insert_file_info.DataSet(test_images, test_labels,
                                test_temps, self.nrows, nfile_train, nfile_test, 
                                nfile_val, self.full_file_path, data_type = 'test')

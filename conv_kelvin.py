@@ -3,15 +3,19 @@ import sys
 import time
 import os.path
 
-# Set train_nn to True for training the neural network or False for performing recognition. 
+# Set train_nn to True for training the neural network or False for performing classification. 
 train_nn = False
 if train_nn == False :
-  print 'Process: recognition.'
+  print 'Process: classification.'
   # If the following is set to True, training will start if no checkpoint is found in the
-  # current directory.
-  countine_training_if_ckpt_not_found = True
+  # current directry.
+  continue_training_if_ckpt_not_found = True
+  # During the classification process, only the testing data will be loaded.
+  perform_classification = True
 else :
   print 'Process: training.'
+  continue_training_using_previous_model = True
+  perform_classification = False
 
 sess = tf.InteractiveSession()
 
@@ -19,7 +23,7 @@ L=200
 lx=4 #=int(raw_input('lx'))
 V4d=lx*lx*lx*L # 4d volume
 
-training=2000  #=int(raw_input('training'))
+training=1000  #=int(raw_input('training'))
 bsize=50 #=int(raw_input('bsize'))
 
 # how does the data look like
@@ -39,8 +43,8 @@ else :
     import data_reader
     import numpy as np
     filename = './N4x4x4_L200_U9_Mu0_T_shuffled_%.2d.HSF.stream'
-    filenumber = np.arange(1,11,1)
-    HSF = data_reader.insert_file_info(filename,filenumber)
+    filenumber = np.arange(1,41,1)
+    HSF = data_reader.insert_file_info(filename,filenumber,performing_classification=perform_classification)
     mnist = HSF.categorize_data()
     #mnist = HSF.categorize_dose_of_data()
     dtau = np.array([0.060, 0.075, 0.090, 0.105, 0.120, 0.135, 0.150, 0.165, \
@@ -50,7 +54,8 @@ else :
                  2.160, 2.310, 2.460, 2.610, 2.760, 2.910, 3.060, 3.210, \
                  3.360])
 
-n_train_data = float(len(mnist.train.labels))
+if train_nn == True or not(perform_classification) :
+    n_train_data = float(len(mnist.train.labels))
 
 print "reading sets ok"
 
@@ -144,19 +149,42 @@ filename_weight_bias = "./model.ckpt"
 
 # Check to see if the checkpoint is located in the current file directory before restoring.
 if train_nn == False :
-  if os.path.isfile(filename_weight_bias) == False and countine_training_if_ckpt_not_found :
+  if os.path.isfile(filename_weight_bias) == False and continue_training_if_ckpt_not_found :
     print '%s is not found in the current directory, starting training...' % filename_weight_bias
     train_nn = True
+    continue_training_using_previous_model = False 
   else : 
     while not(os.path.isfile(filename_weight_bias)) :
       print '%s is not found in the current directory.' %filename_weight_bias
-      filename_weight_bias = raw_input('Input checkpoint model: ')
+      filename_weight_bias = raw_input('Input checkpoint model filename: ')
       filename_weight_bias = './' + filename_weight_bias
     train_nn = False
 
 start_time = time.time()
 
 if train_nn :
+
+  if continue_training_using_previous_model :
+    skip = 'n'
+    file_exist = os.path.isfile(filename_weight_bias)
+    while (not(file_exist) and skip == 'n') :
+      print '%s is not found in the current directory, starting training...' % filename_weight_bias
+      skip = raw_input('Select y to continue training from scratch or n to continue training using existing model: ') 
+      while skip not in ['y','n']:
+        skip = raw_input('Select y to continue training from scratch or n to continue training using existing model: ')
+      if skip == 'y' :
+        file_exist = False
+      else :
+        filename_weight_bias = raw_input('Input checkpoint model filename: ')
+        while not(os.path.isfile(filename_weight_bias)) :
+          print '%s is not found in the current directory.' %filename_weight_bias
+          filename_weight_bias = raw_input('Input checkpoint model filename: ')
+          filename_weight_bias = './' + filename_weight_bias
+        if os.path.isfile(filename_weight_bias) :
+          skip = 'y' 
+
+    saver = tf.train.Saver([W_conv1, b_conv1, W_fc1,b_fc1,W_fc2,b_fc2])
+    save_path = saver.restore(sess, filename_weight_bias)
 
   print 'Total number of training epochs: %g' %(training/n_train_data)
   start_time = time.time()
@@ -209,7 +237,7 @@ if train_nn :
       check_model = tf.reduce_mean(W_conv1).eval()
       best_epoch = training/n_train_data
 
-  print "epoch %.2f, training accuracy %g, test accuracy %g, cost %g"%(i/n_train_data, train_accuracy, test_accuracy, Cost)
+  print "%.2fs, epoch %.2f, training accuracy %g, test accuracy %g, cost %g"%(time.time()-start_time,i/n_train_data, train_accuracy, test_accuracy, Cost)
 
   print 'Best training epoch: %g'%best_epoch
 
@@ -236,7 +264,7 @@ else :
 # To proceed, load the best (saved) model instead of the last training model.
 saver.restore(sess, filename_weight_bias)
 
-print 'Performing recognition...'
+print 'Performing classification...'
 if use_input_data_py :
 
     #producing data to get the plots we like
