@@ -4,7 +4,7 @@ import time
 import os.path
 
 # Set train_nn to True for training the neural network or False for performing classification. 
-train_nn = False
+train_nn = True
 if train_nn == False :
   print 'Process: classification.'
   # If the following is set to True, training will start if no checkpoint is found in the
