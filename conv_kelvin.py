@@ -14,7 +14,7 @@ if train_nn == False :
   perform_classification = True
 else :
   print 'Process: training.'
-  continue_training_using_previous_model = False
+  continue_training_using_previous_model = True
   perform_classification = False
 
 sess = tf.InteractiveSession()
@@ -24,7 +24,7 @@ lx=4 #=int(raw_input('lx'))
 V4d=lx*lx*lx*L # 4d volume
 Tc = 0.36
 
-training=5000  #=int(raw_input('training'))
+training=10000  #=int(raw_input('training'))
 bsize=200 #=int(raw_input('bsize'))
 
 # how does the data look like
@@ -44,13 +44,13 @@ else :
     import data_reader
     import numpy as np
     filename = './N4x4x4_L200_U9_Mu0_T_shuffled_%.2d.HSF.stream'
-    HSF = data_reader.insert_file_info(filename,filenumber,performing_classification=perform_classification)
-    mnist = HSF.categorize_data()
     #mnist = HSF.categorize_dose_of_data()
     os.system("ls -l N4x4x4_L200_U9_Mu0_T* | awk '{print $9}' | sed -e s/N4x4x4_L200_U9_Mu0_T//g -e s/.HSF.stream//g > dtau.dat")
     dtau = np.genfromtxt("dtau.dat")
     dtau = dtau[dtau!=Tc]
     filenumber = np.arange(1,len(dtau)+1,1)
+    HSF = data_reader.insert_file_info(filename,filenumber,performing_classification=perform_classification)
+    mnist = HSF.categorize_data()
 
 #    dtau = np.array([0.060, 0.075, 0.090, 0.105, 0.120, 0.135, 0.150, 0.165, \
 #                 0.180, 0.195, 0.210, 0.225, 0.240, 0.255, 0.270, 0.285, \
