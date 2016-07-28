@@ -1,7 +1,7 @@
 import tensorflow as tf
 import sys
 import time
-import os.path
+import os
 
 # Set train_nn to True for training the neural network or False for performing classification. 
 train_nn = True
@@ -9,12 +9,12 @@ if train_nn == False :
   print 'Process: classification.'
   # If the following is set to True, training will start if no checkpoint is found in the
   # current directry.
-  continue_training_if_ckpt_not_found = True
+  continue_training_if_ckpt_not_found = False
   # During the classification process, only the testing data will be loaded.
   perform_classification = True
 else :
   print 'Process: training.'
-  continue_training_using_previous_model = True
+  continue_training_using_previous_model = False
   perform_classification = False
 
 sess = tf.InteractiveSession()
@@ -22,14 +22,15 @@ sess = tf.InteractiveSession()
 L=200
 lx=4 #=int(raw_input('lx'))
 V4d=lx*lx*lx*L # 4d volume
+Tc = 0.36
 
-training=1000  #=int(raw_input('training'))
-bsize=50 #=int(raw_input('bsize'))
+training=5000  #=int(raw_input('training'))
+bsize=200 #=int(raw_input('bsize'))
 
 # how does the data look like
-Ntemp=41 #int(raw_input('Ntemp'))   #20 # number of different temperatures used in the simulation
-samples_per_T=500  #int(raw_input('samples_per_T'))  #250 # number of samples per temperature value
-samples_per_T_test=500 # int(raw_input('samples_per_T'))  #250 # number of samples per temperature value
+Ntemp=49 #int(raw_input('Ntemp'))   #20 # number of different temperatures used in the simulation
+#samples_per_T=500  #int(raw_input('samples_per_T'))  #250 # number of samples per temperature value
+#samples_per_T_test=500 # int(raw_input('samples_per_T'))  #250 # number of samples per temperature value
 
 numberlabels=2
 
@@ -43,16 +44,20 @@ else :
     import data_reader
     import numpy as np
     filename = './N4x4x4_L200_U9_Mu0_T_shuffled_%.2d.HSF.stream'
-    filenumber = np.arange(1,41,1)
     HSF = data_reader.insert_file_info(filename,filenumber,performing_classification=perform_classification)
     mnist = HSF.categorize_data()
     #mnist = HSF.categorize_dose_of_data()
-    dtau = np.array([0.060, 0.075, 0.090, 0.105, 0.120, 0.135, 0.150, 0.165, \
-                 0.180, 0.195, 0.210, 0.225, 0.240, 0.255, 0.270, 0.285, \
-                 0.300, 0.315, 0.330, 0.345, 0.510, 0.660, 0.810, \
-                 0.960, 1.110, 1.260, 1.410, 1.560, 1.710, 1.860, 2.010, \
-                 2.160, 2.310, 2.460, 2.610, 2.760, 2.910, 3.060, 3.210, \
-                 3.360])
+    os.system("ls -l N4x4x4_L200_U9_Mu0_T* | awk '{print $9}' | sed -e s/N4x4x4_L200_U9_Mu0_T//g -e s/.HSF.stream//g > dtau.dat")
+    dtau = np.genfromtxt("dtau.dat")
+    dtau = dtau[dtau!=Tc]
+    filenumber = np.arange(1,len(dtau)+1,1)
+
+#    dtau = np.array([0.060, 0.075, 0.090, 0.105, 0.120, 0.135, 0.150, 0.165, \
+#                 0.180, 0.195, 0.210, 0.225, 0.240, 0.255, 0.270, 0.285, \
+#                 0.300, 0.315, 0.330, 0.345, 0.510, 0.660, 0.810, \
+#                 0.960, 1.110, 1.260, 1.410, 1.560, 1.710, 1.860, 2.010, \
+#                 2.160, 2.310, 2.460, 2.610, 2.760, 2.910, 3.060, 3.210, \
+#                 3.360])
 
 if train_nn == True or not(perform_classification) :
     n_train_data = float(len(mnist.train.labels))
