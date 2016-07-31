@@ -16,6 +16,7 @@ class insert_file_info :
             filenumber     : An array of file number """
         self.filename         = full_file_path.rsplit('\\', 1)[-1]
         self.filename         = self.filename.rsplit('/', 1)[-1]
+        self.filenumber       = filenumber
         self.full_file_path   = full_file_path
         self.include_validation_data = include_validation_data
         self.nrows            = 0
@@ -26,6 +27,7 @@ class insert_file_info :
         self.performing_classification = performing_classification
         if self.performing_classification :
             self.include_validation_data = False
+        self.delimiter        = [1 for i in xrange(self.ncols)]
 
     class DataSet(object) :
         file_info = None
@@ -267,14 +269,13 @@ class insert_file_info :
         elif n_data_check < 0 :
             nfile_train -= n_data_check
    
-        #self.ndata = nfile_train*self.nrows     
         start_time = time.time()
        
         if not(self.performing_classification) :
 
             TRAIN_DATA = np.zeros((nfile_train*self.nrows,self.ncols))
-            train_images = np.zeros((nfile_train*self.nrows,self.ncols-1))
-            train_labels = np.zeros((nfile_train*self.nrows,1))
+            #train_images = np.zeros((nfile_train*self.nrows,self.ncols-1))
+            #train_labels = np.zeros((nfile_train*self.nrows,1))
             print 'Loading %d/%d files for training data...' % (nfile_train,self.nfile)
             for i in range(nfile_train) :
                 print '%.1fs. Loading file %d.' % (time.time()-start_time, i+1)
@@ -286,8 +287,8 @@ class insert_file_info :
 
         print 'Loading %d/%d files for test data...' % (nfile_test,self.nfile)
         TEST_DATA = np.zeros((nfile_test*self.nrows,self.ncols))
-        test_images = np.zeros((nfile_test*self.nrows,self.ncols-1))
-        test_labels = np.zeros((nfile_test*self.nrows,1))
+        #test_images = np.zeros((nfile_test*self.nrows,self.ncols-1))
+        #test_labels = np.zeros((nfile_test*self.nrows,1))
         for i in range(nfile_test) :
             print '%.1fs. Loading file %d.' % (time.time()-start_time, i+1)
             TEST_DATA[i*self.nrows:(i+1)*self.nrows,:] = np.loadtxt(self.full_file_path%(i+1+nfile_train))
@@ -300,8 +301,8 @@ class insert_file_info :
         if self.include_validation_data :
             print 'Loading %d/%d files for validation data...' % (nfile_val,self.nfile)
             VALIDATION_DATA = np.zeros((nfile_val*self.nrows,self.ncols))
-            validation_images = np.zeros((nfile_val*self.nrows,self.ncols-1))
-            validation_labels = np.zeros((nfile_val*self.nrows,1))
+            #validation_images = np.zeros((nfile_val*self.nrows,self.ncols-1))
+            #validation_labels = np.zeros((nfile_val*self.nrows,1))
             for i in range(nfile_test) :
                 print '%.1fs. Loading file %d.' % (time.time()-start_time, i+1)
                 VALIDATION_DATA[i*self.nrows:(i+1)*self.nrows,:] = np.loadtxt(self.full_file_path%(i+1+nfile_train+nfile_test))
@@ -313,9 +314,9 @@ class insert_file_info :
             data_sets.train      = insert_file_info.DataSet(train_images, train_labels,
                                    train_temps, self.nrows, nfile_train, nfile_test, 
                                    nfile_val, self.full_file_path, data_type = 'train')
-        data_sets.test       = insert_file_info.DataSet(test_images, test_labels,
-                               test_temps, self.nrows, nfile_train, nfile_test, 
-                               nfile_val, self.full_file_path, data_type = 'test')
+        data_sets.test           = insert_file_info.DataSet(test_images, test_labels,
+                                   test_temps, self.nrows, nfile_train, nfile_test, 
+                                   nfile_val, self.full_file_path, data_type = 'test')
         if self.include_validation_data :
             data_sets.validation = insert_file_info.DataSet(validation_images,
                                    validation_labels, validation_temps, self.nrows, 
@@ -411,3 +412,38 @@ class insert_file_info :
 
         return data_sets
 
+    def load_classification_data(self, nrows = 1000, ncols=12800, SkipHeader = 0, load_ndata_per_file = 1000) :
+        class DataSets(object):
+            pass
+        data_sets = DataSets()       
+ 
+        start_time = time.time()
+
+        self.ncols            = ncols
+        self.nrows            = nrows
+        self.delimiter        = [1 for i in xrange(self.ncols)]
+
+        if SkipHeader == 0 :
+            load_ndata_per_file = self.nrows
+        SkipFooter = self.nrows - SkipHeader - load_ndata_per_file
+
+        while load_ndata_per_file > self.nrows :
+            print 'Number of classification data used per temperature must be smaller than number of data per temnperature.'
+            print 'Number of data per temnperature         : %d' % self.nrows
+            print 'Classification data used per temperature: %d' % load_ndata_per_file
+            load_ndata_per_file = input('Input new classification data used per temperature: ')
+     
+        classification_images = np.zeros((self.nfile*load_ndata_per_file,self.ncols))
+        print 'Loading %d files for classfication data...' % (self.nfile)
+        for i in range(self.nfile) :
+            print '%.1fs. Loading file %d.' % (time.time()-start_time, i+1)
+            classification_images[i*load_ndata_per_file:(i+1)*load_ndata_per_file,:] = np.genfromtxt(self.full_file_path%self.filenumber[i], dtype = int, delimiter=self.delimiter, skip_header=SkipHeader, skip_footer=SkipFooter)
+        classification_images = classification_images.astype('int')
+        classification_labels = []
+        classification_temps  = []
+
+        data_sets.classification = insert_file_info.DataSet(classification_images, classification_labels, 
+                                   classification_temps, 0, 0, 0, 0, self.full_file_path, 
+                                   data_type='classification')
+        
+        return data_sets
