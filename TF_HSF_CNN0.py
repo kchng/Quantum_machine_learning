@@ -70,13 +70,13 @@ rawdata_filename     = './N%dx%dx%d_L200_U%d_Mu0_T' % (nspin,nspin,nspin,U) + '%
 filename_weight_bias = "./model.ckpt"
 
 # Output of training measurements filename
-filename_measure     = "./HSF_measure.dat"
+filename_measure     = "./HSF_measurez.dat"
 
 # Output of classification result with labels
-filename_result      = "./result.dat"
+filename_result      = "./resultz.dat"
 
 # Output of classification result from raw data (without labels)
-filename_classified  = "./classified.dat"
+filename_classified  = "./classifiedz.dat"
 
 # Neural network architecture settings -----------------------------------------------
 
@@ -471,14 +471,12 @@ else :
   Table[:,0] = dtau
   Table[:,-1] = classification_data_per_temp
 
+  n=0 
   for j in range(len(dtau)) :
-    G = 0
     for i in range(classification_data_per_temp) :
       # Output of neural net vs temperature
-      # print HSF.classification.images[i,:].reshape(1,V4d).sum()
-      G += np.argmax(y_conv.eval(feed_dict={x: HSF.classification.images[i,:].reshape(1,V4d), keep_prob: 1.0}))
-      Table[j,1] += np.argmax(y_conv.eval(feed_dict={x: HSF.classification.images[i,:].reshape(1,V4d), keep_prob: 1.0}))
-      print j, G
+      Table[j,1] += np.argmax(y_conv.eval(feed_dict={x: HSF.classification.images[n,:].reshape(1,V4d), keep_prob: 1.0}))
+      n+=1
 
   # Normalize the output of the second neuron
   Table[:,1] = Table[:,1]/Table[:,-1].astype('float')
