@@ -401,9 +401,9 @@ class insert_file_info :
             data_sets.train      = insert_file_info.DataSet(train_images, train_labels,
                                    train_temps, self.nrows, nfile_train, nfile_test, 
                                    nfile_val, self.full_file_path, data_type = 'train')
-        data_sets.test       = insert_file_info.DataSet(test_images, test_labels,
-                               test_temps, self.nrows, nfile_train, nfile_test, 
-                               nfile_val, self.full_file_path, data_type = 'test')
+        data_sets.test           = insert_file_info.DataSet(test_images, test_labels,
+                                   test_temps, self.nrows, nfile_train, nfile_test, 
+                                   nfile_val, self.full_file_path, data_type = 'test')
         if self.include_validation_data :
             data_sets.validation = insert_file_info.DataSet(validation_images,
                                    validation_labels, validation_temps, self.nrows, 
