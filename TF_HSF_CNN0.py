@@ -70,13 +70,13 @@ rawdata_filename     = './N%dx%dx%d_L200_U%d_Mu0_T' % (nspin,nspin,nspin,U) + '%
 filename_weight_bias = "./model.ckpt"
 
 # Output of training measurements filename
-filename_measure     = "./HSF_measurez.dat"
+filename_measure     = "./HSF_measure.dat"
 
 # Output of classification result with labels
-filename_result      = "./resultz.dat"
+filename_result      = "./result.dat"
 
 # Output of classification result from raw data (without labels)
-filename_classified  = "./classifiedz.dat"
+filename_classified  = "./classified.dat"
 
 # Neural network architecture settings -----------------------------------------------
 
