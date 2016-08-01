@@ -2,6 +2,7 @@
 import data_reader
 
 # Standard libraries
+import datetime
 import os
 import sys
 import time
@@ -23,20 +24,21 @@ T, F = True, False
 # (T) or it can also be used for performing classification using raw unlabelled
 # data by setting train_neural_network to (F) and perform_classification_with_label
 # to (F).
-train_neural_network = F
+train_neural_network = T
 
 # Number of training epoch
-epochs = 100
+epochs = 50
 # Size of training batch
 batch_size = 200
-
+# Threshold of difference between train_accuracy and test_accuracy
+delta_accuracy_threshold = 0.025
 
 # Classification can be performed on labelled or raw data. Set
 # perform_classification_with_label to (F) to perform classification on labelled
 # data or (T) to perform classification on raw data. When train_neural_network is
 # set to (T), perform_classification_with_label is set to (T) automatically and
 # clasification will be done on labelled data.
-perform_classification_with_label = F
+perform_classification_with_label = T
 
 # System and file information --------------------------------------------------------
 
@@ -59,24 +61,32 @@ ndata_per_temp = 1000
 # Number of classification data (raw unlabelled data) to be used for classification. 
 classification_data_per_temp = 250
 
+# String of current date and time
+dt = datetime.datetime.now()
+year, month, day, hour, minute = '%.2d' % dt.year, '%.2d' % dt.month, '%.2d' % dt.day, '%.2d' % dt.hour, '%.2d' % dt.minute
+start_date_time = '%s%s%s-%s%s' % (year, month, day, hour, minute)
+
 # Input labelled and shuffled filename for training and performaing classification
 # with labels.
 filename = './N%dx%dx%d_L200_U%d_Mu0_T_shuffled' % (nspin,nspin,nspin,U) + '_%.2d.dat'
 
 # Input raw filename for performing classification without labels.
-rawdata_filename     = './N%dx%dx%d_L200_U%d_Mu0_T' % (nspin,nspin,nspin,U) + '%s.HSF.stream'
+rawdata_filename       = './N%dx%dx%d_L200_U%d_Mu0_T' % (nspin,nspin,nspin,U) + '%s.HSF.stream'
+
+# Trained model
+filename_trained_model = "./model.ckpt" 
 
 # Output model filename
-filename_weight_bias = "./model.ckpt"
+filename_weight_bias   = "./" + start_date_time + "model.ckpt"
 
 # Output of training measurements filename
-filename_measure     = "./HSF_measurez.dat"
+filename_measure       = "./" + start_date_time + "_measurements.dat"
 
 # Output of classification result with labels
-filename_result      = "./resultz.dat"
+filename_result        = "./" + start_date_time + "_result.dat"
 
 # Output of classification result from raw data (without labels)
-filename_classified  = "./classifiedz.dat"
+filename_classified    = "./" + start_date_time + "_classified.dat"
 
 # Neural network architecture settings -----------------------------------------------
 
@@ -125,6 +135,7 @@ else :
     print 'Process: classification with label.'
   else :
     print 'Process: classification without label.'
+    print 'Using %d data per temperature.' % classification_data_per_temp
   # xxxxx Don't change the following variable. xxxxx
   # When perform_classification is set to True, only test data will be loaded.
   perform_classification = T
@@ -286,15 +297,15 @@ sess.run(tf.initialize_all_variables())
 # When performing classification, check if the trained model checkpoint file is 
 # located in the current file directory before restoring.
 if train_neural_network == False :
-  if os.path.isfile(filename_weight_bias) == False and continue_training_if_model_not_found :
-    print '%s is not found in the current directory, starting training...' % filename_weight_bias
+  if os.path.isfile(filename_trained_model) == False and continue_training_if_model_not_found :
+    print '%s is not found in the current directory, starting training...' % filename_trained_model
     train_neural_network = True
     continue_training_using_previous_model = False
   else :
-    while not(os.path.isfile(filename_weight_bias)) :
-      print '%s is not found in the current directory.' %filename_weight_bias
-      filename_weight_bias = raw_input('Input checkpoint model filename: ')
-      filename_weight_bias = './' + filename_weight_bias
+    while not(os.path.isfile(filename_trained_model)) :
+      print '%s is not found in the current directory.' % filename_trained_model
+      filename_trained_model = raw_input('Input trained model filename: ')
+      filename_trained_model = './' + filename_trained_model
     train_neural_network = False
 
 # Training ---------------------------------------------------------------------------
@@ -312,26 +323,26 @@ if train_neural_network :
   # before restoring.
   if continue_training_using_previous_model :
     skip = False
-    file_exist = os.path.isfile(filename_weight_bias)
+    file_exist = os.path.isfile(filename_trained_model)
     while (not(file_exist) and not(skip)) :
-      print '%s is not found in the current directory, starting training...' % filename_weight_bias
+      print '%s is not found in the current directory, starting training...' % filename_trained_model
       skip = raw_input('Select y to continue training from scratch or n to continue training using existing model: ')
       while skip not in ['y','n']:
         skip = raw_input('Select y to continue training from scratch or n to continue training using existing model: ')
       if skip :
         file_exist = False
       else :
-        filename_weight_bias = raw_input('Input checkpoint model filename: ')
-        while not(os.path.isfile(filename_weight_bias)) :
-          print '%s is not found in the current directory.' %filename_weight_bias
-          filename_weight_bias = raw_input('Input checkpoint model filename: ')
-          filename_weight_bias = './' + filename_weight_bias
-        if os.path.isfile(filename_weight_bias) :
+        filename_trained_model = raw_input('Input trained model filename: ')
+        while not(os.path.isfile(filename_trained_model)) :
+          print '%s is not found in the current directory.'%filename_trained_model
+          filename_trained_model = raw_input('Input trained model filename: ')
+          filename_trained_model = './' + filename_trained_model
+        if os.path.isfile(filename_trained_model) :
           skip = True
 
-    saver = tf.train.Saver([W_conv1, b_conv1, W_fc1,b_fc1,W_fc2,b_fc2])
+    saver = tf.train.Saver([W_conv1, b_conv1, W_fc1, b_fc1, W_fc2, b_fc2])
     # Restore trained model.
-    save_path = saver.restore(sess, filename_weight_bias)
+    save_path = saver.restore(sess, filename_trained_model)
 
   # Initialize best test accuracy. 
   best_test_accuracy = 0
@@ -354,7 +365,8 @@ if train_neural_network :
   n = 0
   fractional_epoch = batch_size*100/float(n_train_data)
 
-  print 'Total number of training epochs: %g' % ndata_collect*fractional_epoch
+  print ndata_collect, fractional_epoch
+  print 'Total number of training epochs: %.1f' % (ndata_collect*fractional_epoch)
 
   for j in range(epochs):
     for i in range(iteration_per_epoch):
@@ -373,12 +385,12 @@ if train_neural_network :
         # To avoid multiple training, the model is saved when the difference between testing 
         # accuracy and training accuracy doesn't exceed a set value (it is set to 0.05 here)
         # and if the current testing accuracy is higher than the previous. 
-        delta_accuracy = abs(train_accuracy - test_accuracy)
+        delta_accuracy = train_accuracy - test_accuracy
         if test_accuracy > best_test_accuracy :
           best_test_accuracy = test_accuracy
-          if delta_accuracy <= 0.05 :
+          if (delta_accuracy <= delta_accuracy_threshold) and delta_accuracy > 0 :
             # Save the best model thus far if the above two criteria are met.
-            saver = tf.train.Saver([W_conv1,b_conv1,W_fc1,b_fc1,W_fc2,b_fc2])
+            saver = tf.train.Saver([W_conv1, b_conv1, W_fc1, b_fc1, W_fc2, b_fc2])
             save_path = saver.save(sess, filename_weight_bias)
             check_model = tf.reduce_mean(W_conv1).eval()
             best_epoch = n*fractional_epoch
@@ -395,7 +407,7 @@ if train_neural_network :
   delta_accuracy = abs(train_accuracy - test_accuracy)
   if test_accuracy > best_test_accuracy :
     if delta_accuracy <= 0.05 :
-      saver = tf.train.Saver([W_conv1, b_conv1, W_fc1,b_fc1,W_fc2,b_fc2])
+      saver = tf.train.Saver([W_conv1, b_conv1, W_fc1, b_fc1, W_fc2, b_fc2])
       save_path = saver.save(sess, filename_weight_bias)
       check_model = tf.reduce_mean(W_conv1).eval()
       best_epoch = epochs
@@ -426,7 +438,7 @@ if train_neural_network :
 else :
   saver = tf.train.Saver([W_conv1, b_conv1, W_fc1,b_fc1,W_fc2,b_fc2])
   # To proceed, load the trained model.
-  saver.restore(sess, filename_weight_bias)
+  saver.restore(sess, filename_trained_model)
 
 print 'Performing classification...'
 
