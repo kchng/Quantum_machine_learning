@@ -77,7 +77,7 @@ rawdata_filename       = './N%dx%dx%d_L200_U%d_Mu0_T' % (nspin,nspin,nspin,U) + 
 filename_trained_model = "./model.ckpt" 
 
 # Output model filename
-filename_weight_bias   = "./" + start_date_time + "model.ckpt"
+filename_weight_bias   = "./" + start_date_time + "_model.ckpt"
 
 # Output of training measurements filename
 filename_measure       = "./" + start_date_time + "_measurements.dat"
@@ -390,10 +390,12 @@ if train_neural_network :
           best_test_accuracy = test_accuracy
           if (delta_accuracy <= delta_accuracy_threshold) and delta_accuracy > 0 :
             # Save the best model thus far if the above two criteria are met.
+            print 'Saving model...' 
             saver = tf.train.Saver([W_conv1, b_conv1, W_fc1, b_fc1, W_fc2, b_fc2])
             save_path = saver.save(sess, filename_weight_bias)
             check_model = tf.reduce_mean(W_conv1).eval()
             best_epoch = n*fractional_epoch
+            np.savetxt(filename_measure, Table_measure[:n,:])
         n += 1
       train_step.run(feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
 
@@ -406,11 +408,12 @@ if train_neural_network :
 
   delta_accuracy = abs(train_accuracy - test_accuracy)
   if test_accuracy > best_test_accuracy :
-    if delta_accuracy <= 0.05 :
+    if (delta_accuracy <= delta_accuracy_threshold) and delta_accuracy > 0 :
+      print 'Saving model...' 
       saver = tf.train.Saver([W_conv1, b_conv1, W_fc1, b_fc1, W_fc2, b_fc2])
       save_path = saver.save(sess, filename_weight_bias)
       check_model = tf.reduce_mean(W_conv1).eval()
-      best_epoch = epochs
+      best_epoch = ndata_collect*fractional_epoch
 
   print "%.2fs, epoch %.2f, training accuracy %g, test accuracy %g, cost %g"%(time.time()-start_time,(n+1)*fractional_epoch, train_accuracy, test_accuracy, Cost)
 
