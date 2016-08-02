@@ -133,8 +133,6 @@ else :
   # appropriate model filename.
   continue_training_if_model_not_found = F
 
-  perform_classification_with_label = perform_classification_with_label
-
   # xxxxx Don't change the following variable. xxxxx
   if perform_classification_with_label == T :
     print 'Process: classification with label.'
@@ -345,6 +343,7 @@ if train_neural_network :
         if os.path.isfile(filename_trained_model) :
           skip = True
 
+    print 'Continue training using %s.' % filename_trained_model.replace('./','')
     saver = tf.train.Saver([W_conv1, b_conv1, W_fc1, b_fc1, W_fc2, b_fc2])
     # Restore trained model.
     save_path = saver.restore(sess, filename_trained_model)

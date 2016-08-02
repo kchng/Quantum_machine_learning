@@ -24,7 +24,7 @@ T, F = True, False
 # (T) or it can also be used for performing classification using raw unlabelled
 # data by setting train_neural_network to (F) and perform_classification_with_label
 # to (F).
-train_neural_network = F
+train_neural_network = T
 continue_training_using_previous_model = T
 
 # Number of training epoch
@@ -32,7 +32,7 @@ epochs = 50
 # Size of training batch
 batch_size = 200
 # Threshold of difference between train_accuracy and test_accuracy
-delta_accuracy_threshold = 0.025
+delta_accuracy_threshold = 0.015
 # Threshold for stopping training when overtraining is encountered.
 overtraining_threshold = 10
 
@@ -77,7 +77,7 @@ filename = './N%dx%dx%d_L200_U%d_Mu0_T_shuffled' % (nspin,nspin,nspin,U) + '_%.2
 rawdata_filename       = './N%dx%dx%d_L200_U%d_Mu0_T' % (nspin,nspin,nspin,U) + '%s.HSF.stream'
 
 # Trained model
-filename_trained_model = "./20160802-1101_model.ckpt" 
+filename_trained_model = "./20160802-1519_model.ckpt" 
 
 # Output model filename
 filename_weight_bias   = "./" + start_date_time + "_model.ckpt"
@@ -135,8 +135,6 @@ else :
   # appropriate model filename.
   continue_training_if_model_not_found = F
 
-  perform_classification_with_label = perform_classification_with_label
-
   # xxxxx Don't change the following variable. xxxxx
   if perform_classification_with_label == T :
     print 'Process: classification with label.'
@@ -152,7 +150,7 @@ if perform_classification_with_label == True :
   os.system("ls -l N%dx%dx%d_L200_U%d_Mu0_T*.HSF.stream | awk '{print $9}' | sed -e s/N%dx%dx%d_L200_U%d_Mu0_T//g -e s/.HSF.stream//g > dtau.dat" %(nspin,nspin,nspin,U,nspin,nspin,nspin,U))
   dtau = np.genfromtxt("dtau.dat")
   # Array of shuffled file's file number 
-  filenumber = np.arange(1,len(dtau)+1,1)
+  filenumber = np.arange(1,len(dtau)+1-31,1)
   # Provide file information to the data_reader module.
   HSF = data_reader.insert_file_info(filename,filenumber, performing_classification=perform_classification)
   # Load and catogorize data into either training data, test data, validation data, or 
@@ -355,7 +353,8 @@ if train_neural_network :
         if os.path.isfile(filename_trained_model) :
           skip = True
 
-    saver = tf.train.Saver([W_conv1, b_conv1, W_fc1, b_fc1, W_fc2, b_fc2])
+    print 'Continue training using %s.' % filename_trained_model.replace('./','')
+    saver = tf.train.Saver([W_conv1, b_conv1, W_conv2, b_conv2, W_fc1, b_fc1, W_fc2, b_fc2])
     # Restore trained model.
     save_path = saver.restore(sess, filename_trained_model)
 
@@ -412,7 +411,7 @@ if train_neural_network :
           if (delta_accuracy <= delta_accuracy_threshold) and delta_accuracy > 0 :
             # Save the best model thus far if the above two criteria are met.
             print 'Saving model...'
-            saver = tf.train.Saver([W_conv1, b_conv1, W_fc1, b_fc1, W_fc2, b_fc2])
+            saver = tf.train.Saver([W_conv1, b_conv1, W_conv2, b_conv2, W_fc1, b_fc1, W_fc2, b_fc2])
             save_path = saver.save(sess, filename_weight_bias)
             check_model = tf.reduce_mean(W_conv1).eval()
             best_epoch = n*fractional_epoch
@@ -456,7 +455,7 @@ if train_neural_network :
     if test_accuracy > best_test_accuracy :
       if (delta_accuracy <= delta_accuracy_threshold) and delta_accuracy > 0 :
         print 'Saving model...'
-        saver = tf.train.Saver([W_conv1, b_conv1, W_fc1, b_fc1, W_fc2, b_fc2])
+        saver = tf.train.Saver([W_conv1, b_conv1, W_conv2, b_conv2, W_fc1, b_fc1, W_fc2, b_fc2])
         save_path = saver.save(sess, filename_weight_bias)
         check_model = tf.reduce_mean(W_conv1).eval()
         best_epoch = ndata_collect*fractional_epoch
@@ -485,7 +484,7 @@ if train_neural_network :
 # Classification ---------------------------------------------------------------------
 
 else :
-  saver = tf.train.Saver([W_conv1, b_conv1, W_fc1, b_fc1, W_fc2, b_fc2])
+  saver = tf.train.Saver([W_conv1, b_conv1, W_conv2, b_conv2, W_fc1, b_fc1, W_fc2, b_fc2])
   # To proceed, load the trained model.
   saver.restore(sess, filename_trained_model)
 
