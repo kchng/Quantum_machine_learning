@@ -32,7 +32,7 @@ epochs = 50
 # Size of training batch
 batch_size = 200
 # Threshold of difference between train_accuracy and test_accuracy
-delta_accuracy_threshold = 0.015
+delta_accuracy_threshold = 0.025
 # Threshold for stopping training when overtraining is encountered.
 overtraining_threshold = 10
 
@@ -77,7 +77,7 @@ filename = './N%dx%dx%d_L200_U%d_Mu0_T_shuffled' % (nspin,nspin,nspin,U) + '_%.2
 rawdata_filename       = './N%dx%dx%d_L200_U%d_Mu0_T' % (nspin,nspin,nspin,U) + '%s.HSF.stream'
 
 # Trained model
-filename_trained_model = "./20160802-1519_model.ckpt" 
+filename_trained_model = "./model.ckpt" 
 
 # Output model filename
 filename_weight_bias   = "./" + start_date_time + "_model.ckpt"
@@ -150,7 +150,7 @@ if perform_classification_with_label == True :
   os.system("ls -l N%dx%dx%d_L200_U%d_Mu0_T*.HSF.stream | awk '{print $9}' | sed -e s/N%dx%dx%d_L200_U%d_Mu0_T//g -e s/.HSF.stream//g > dtau.dat" %(nspin,nspin,nspin,U,nspin,nspin,nspin,U))
   dtau = np.genfromtxt("dtau.dat")
   # Array of shuffled file's file number 
-  filenumber = np.arange(1,len(dtau)+1-31,1)
+  filenumber = np.arange(1,len(dtau)+1,1)
   # Provide file information to the data_reader module.
   HSF = data_reader.insert_file_info(filename,filenumber, performing_classification=perform_classification)
   # Load and catogorize data into either training data, test data, validation data, or 
