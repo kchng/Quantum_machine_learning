@@ -25,6 +25,7 @@ T, F = True, False
 # data by setting train_neural_network to (F) and perform_classification_with_label
 # to (F).
 train_neural_network = T
+continue_training_using_previous_model = T
 
 # Number of training epoch
 epochs = 50
@@ -32,6 +33,8 @@ epochs = 50
 batch_size = 200
 # Threshold of difference between train_accuracy and test_accuracy
 delta_accuracy_threshold = 0.025
+# Threshold for stopping training when overtraining is encountered.
+overtraining_threshold = 10
 
 # Classification can be performed on labelled or raw data. Set
 # perform_classification_with_label to (F) to perform classification on labelled
@@ -105,6 +108,9 @@ filter_w = filter_d
 # Optimizer learning rate
 eta = 1e-4
 
+# L2 regularization parameter
+lambdha_per_n_train_data = 0
+
 
 
 
@@ -112,7 +118,6 @@ eta = 1e-4
 # Don't change any of the following variables.
 if train_neural_network == T :
   print 'Process: training.'
-  continue_training_using_previous_model = F
 
   # xxxxx Don't change the following variable. xxxxx
   # Perform classification on test data after training.
@@ -345,7 +350,7 @@ if train_neural_network :
     save_path = saver.restore(sess, filename_trained_model)
 
   # Initialize best test accuracy. 
-  best_test_accuracy = 0
+  best_test_accuracy = 0.8
 
   # Calculate the number of data to collect for the whole training cycle.
   ndata_collect_per_epoch = round(float(n_train_data)/batch_size/100)
@@ -365,10 +370,16 @@ if train_neural_network :
   n = 0
   fractional_epoch = batch_size*100/float(n_train_data)
 
-  print ndata_collect, fractional_epoch
   print 'Total number of training epochs: %.1f' % (ndata_collect*fractional_epoch)
 
+  # Initialise counter for checking overtraining/ overfitting.
+  n_overtraining_counter = 0
+  m = 0
+
   for j in range(epochs):
+    # Break out of the training epoch loop if overtraining is encountered.
+    if n_overtraining_counter >= overtraining_threshold :
+      break
     for i in range(iteration_per_epoch):
       batch = HSF.train.next_batch(batch_size)
       if i%100 == 0:
@@ -396,26 +407,51 @@ if train_neural_network :
             check_model = tf.reduce_mean(W_conv1).eval()
             best_epoch = n*fractional_epoch
             np.savetxt(filename_measure, Table_measure[:n,:])
+        # Check for overtraining/ overfitting. If so, stop training and break out of the
+        # training iteration per epoch loop.
+        if train_accuracy > test_accuracy and test_accuracy > 0.8 :
+          if m == 0 :
+            # If training accuracy is greater than test accuracy on first account, set
+            # counter to 1.
+            n_overtraining_counter = 1
+            m = n
+          elif (m+1) == n :
+            # If training accuracy is greater than test accuracy consecutively, increase
+            # counter.
+            n_overtraining_counter += 1
+            m = n
+          elif (m+1) < n :
+            # Reset counter otherwise. 
+            n_overtraining_counter = 0
+            m = 0
+        if n_overtraining_counter >= overtraining_threshold :
+          print 'Overtraining encountered. Stopping training.'
+          Table_measure = Table_measure[:n,:]
+          Overtraining = T
+          break
+        else :
+          Overtraining = F
         n += 1
       train_step.run(feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
 
-  # Final check to save the best model.
-  train_accuracy = accuracy.eval(feed_dict={
-    x: batch[0], y_: batch[1], keep_prob: 1.0})
-  test_accuracy = accuracy.eval(feed_dict={
-    x: HSF.test.images, y_: HSF.test.labels, keep_prob: 1.0})
-  Cost = cross_entropy.eval(feed_dict={x: batch[0], y_: batch[1], keep_prob: 1.0})
+  if not(Overtraining) :
+    # Final check to save the best model.
+    train_accuracy = accuracy.eval(feed_dict={
+      x: batch[0], y_: batch[1], keep_prob: 1.0})
+    test_accuracy = accuracy.eval(feed_dict={
+      x: HSF.test.images, y_: HSF.test.labels, keep_prob: 1.0})
+    Cost = cross_entropy.eval(feed_dict={x: batch[0], y_: batch[1], keep_prob: 1.0})
 
-  delta_accuracy = abs(train_accuracy - test_accuracy)
-  if test_accuracy > best_test_accuracy :
-    if (delta_accuracy <= delta_accuracy_threshold) and delta_accuracy > 0 :
-      print 'Saving model...' 
-      saver = tf.train.Saver([W_conv1, b_conv1, W_fc1, b_fc1, W_fc2, b_fc2])
-      save_path = saver.save(sess, filename_weight_bias)
-      check_model = tf.reduce_mean(W_conv1).eval()
-      best_epoch = ndata_collect*fractional_epoch
+    delta_accuracy = abs(train_accuracy - test_accuracy)
+    if test_accuracy > best_test_accuracy :
+      if (delta_accuracy <= delta_accuracy_threshold) and delta_accuracy > 0 :
+        print 'Saving model...' 
+        saver = tf.train.Saver([W_conv1, b_conv1, W_fc1, b_fc1, W_fc2, b_fc2])
+        save_path = saver.save(sess, filename_weight_bias)
+        check_model = tf.reduce_mean(W_conv1).eval()
+        best_epoch = ndata_collect*fractional_epoch
 
-  print "%.2fs, epoch %.2f, training accuracy %g, test accuracy %g, cost %g"%(time.time()-start_time,(n+1)*fractional_epoch, train_accuracy, test_accuracy, Cost)
+    print "%.2fs, epoch %.2f, training accuracy %g, test accuracy %g, cost %g"%(time.time()-start_time,(n+1)*fractional_epoch, train_accuracy, test_accuracy, Cost)
 
   print 'Best training epoch: %g'%best_epoch
 
@@ -439,7 +475,7 @@ if train_neural_network :
 # Classification ---------------------------------------------------------------------
 
 else :
-  saver = tf.train.Saver([W_conv1, b_conv1, W_fc1,b_fc1,W_fc2,b_fc2])
+  saver = tf.train.Saver([W_conv1, b_conv1, W_fc1, b_fc1, W_fc2, b_fc2])
   # To proceed, load the trained model.
   saver.restore(sess, filename_trained_model)
 
