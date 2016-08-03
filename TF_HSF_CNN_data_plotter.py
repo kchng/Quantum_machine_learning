@@ -12,8 +12,8 @@ T_c = 0.36
 # Initial guess solution of critical temperature
 T_c_guess = 0.5
 
-filename_measurements = '20160802-2202_measurements.dat'
-filename_result = '20160802-2202_result.dat'
+filename_measurements = '20160802-1934_measurements.dat'
+filename_result = '20160802-1934_result.dat'
 title = '$\mathrm{2\ (conv + ReLU),\ learning\ rate = 1e-3,\ \\lambda/n_{training\ data} = 0.0001}$'
 
 def quadratic( x ):
@@ -93,6 +93,8 @@ plt.ylim([0,1])
 ax12 = ax11.twinx()
 ax12.plot(training_epochs, cost, ls = '--', 
   label = '$\mathrm{Cross-entropy\ cost}$', color=Color[-1], lw=2, alpha=0.5)
+
+ax12.set_ylabel('$\mathrm{Cost}$', fontsize='25')
 
 lines1, labels1 = ax11.get_legend_handles_labels()
 lines2, labels2 = ax12.get_legend_handles_labels()
