@@ -25,7 +25,7 @@ T, F = True, False
 # data by setting train_neural_network to (F) and perform_classification_with_label
 # to (F).
 train_neural_network = T
-continue_training_using_previous_model = T
+continue_training_using_previous_model = F
 
 # Number of training epoch
 epochs = 50
@@ -106,11 +106,16 @@ filter_d = 2
 filter_h = filter_d
 filter_w = filter_d
 
-# Optimizer learning rate
-eta = 1e-3
+# Adaptive learning rate is used. As the training goes on, the learning rate is
+# lowered progressively using exponential decay function.
+#   Optimizer initial learning rate
+eta0 = 1e-3
+
+#   decay rate
+decay_rate = 0.90
 
 # L2 regularization parameter
-lambdha_per_n_train_data = 0
+lambdha_per_n_train_data = 0 # 0.0001
 
 
 
@@ -294,9 +299,10 @@ y_conv = tf.nn.softmax(tf.matmul(h_fc1_drop, W_fc2) + b_fc2)
 L2_reg = lambdha_per_n_train_data*(tf.nn.l2_loss(W_fc1) + tf.nn.l2_loss(W_fc2))
 cross_entropy = tf.reduce_mean(-tf.reduce_sum(y_ * tf.log(y_conv)+L2_reg, reduction_indices=[1]))
 # tf.train.exponential_decay(learning_rate, global_step, decay_steps, decay_rate, staircase=False)
-# Set adaptive learning rate
-#eta = tf.train.exponential_decay(learning_rate, 
-train_step = tf.train.AdamOptimizer(eta).minimize(cross_entropy)
+# Use adaptive learning rate
+global_step = tf.Variable(0, trainable=False)
+eta = tf.train.exponential_decay(eta0, global_step*batch_size, n_train_data, decay_rate)
+train_step = tf.train.AdamOptimizer(eta).minimize(cross_entropy, global_step=global_step)
 correct_prediction = tf.equal(tf.argmax(y_conv,1), tf.argmax(y_,1))
 accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 # Before Variables can be used within a session, they must be initialized
@@ -384,10 +390,11 @@ if train_neural_network :
   # Initialise counter for checking overtraining/ overfitting.
   n_overtraining_counter = 0
   m = 0
+  Overtraining = F
 
   for j in range(epochs):
     # Break out of the training epoch loop if overtraining is encountered.
-    if n_overtraining_counter >= overtraining_threshold :
+    if Overtraining :
       break
     for i in range(iteration_per_epoch):
       batch = HSF.train.next_batch(batch_size)
@@ -406,16 +413,16 @@ if train_neural_network :
         # accuracy and training accuracy doesn't exceed a set value (it is set to 0.05 here)
         # and if the current testing accuracy is higher than the previous. 
         delta_accuracy = train_accuracy - test_accuracy
-        if test_accuracy > best_test_accuracy :
+        if (test_accuracy > best_test_accuracy) and (delta_accuracy <= delta_accuracy_threshold) and (delta_accuracy > 0) :
+          # Update the best test accuracy
           best_test_accuracy = test_accuracy
-          if (delta_accuracy <= delta_accuracy_threshold) and delta_accuracy > 0 :
-            # Save the best model thus far if the above two criteria are met.
-            print 'Saving model...'
-            saver = tf.train.Saver([W_conv1, b_conv1, W_conv2, b_conv2, W_fc1, b_fc1, W_fc2, b_fc2])
-            save_path = saver.save(sess, filename_weight_bias)
-            check_model = tf.reduce_mean(W_conv1).eval()
-            best_epoch = n*fractional_epoch
-            np.savetxt(filename_measure, Table_measure[:n,:])
+          # Save the best model thus far if the above two criteria are met.
+          print 'Saving model...'
+          saver = tf.train.Saver([W_conv1, b_conv1, W_conv2, b_conv2, W_fc1, b_fc1, W_fc2, b_fc2])
+          save_path = saver.save(sess, filename_weight_bias)
+          check_model = tf.reduce_mean(W_conv1).eval()
+          best_epoch = n*fractional_epoch
+          np.savetxt(filename_measure, Table_measure[:n,:])
         # Check for overtraining/ overfitting. If so, stop training and break out of the
         # training iteration per epoch loop.
         if train_accuracy > test_accuracy and test_accuracy > 0.8 :
@@ -433,7 +440,7 @@ if train_neural_network :
             # Reset counter otherwise. 
             n_overtraining_counter = 0
             m = 0
-        if n_overtraining_counter >= overtraining_threshold :
+        if n_overtraining_counter >= overtraining_threshold or np.isnan(Cost):
           print 'Overtraining encountered. Stopping training.'
           Table_measure = Table_measure[:n,:]
           Overtraining = T

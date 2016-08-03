@@ -108,8 +108,6 @@ filter_w = filter_d
 # Optimizer learning rate
 eta = 1e-4
 
-# L2 regularization parameter
-lambdha_per_n_train_data = 0
 
 
 
@@ -374,10 +372,11 @@ if train_neural_network :
   # Initialise counter for checking overtraining/ overfitting.
   n_overtraining_counter = 0
   m = 0
+  Overtraining = F
 
   for j in range(epochs):
     # Break out of the training epoch loop if overtraining is encountered.
-    if n_overtraining_counter >= overtraining_threshold :
+    if Overtraining :
       break
     for i in range(iteration_per_epoch):
       batch = HSF.train.next_batch(batch_size)
@@ -396,16 +395,16 @@ if train_neural_network :
         # accuracy and training accuracy doesn't exceed a set value (it is set to 0.05 here)
         # and if the current testing accuracy is higher than the previous. 
         delta_accuracy = train_accuracy - test_accuracy
-        if test_accuracy > best_test_accuracy :
+        if (test_accuracy > best_test_accuracy) and (delta_accuracy <= delta_accuracy_threshold) and (delta_accuracy > 0) :
+          # Update the best test accuracy
           best_test_accuracy = test_accuracy
-          if (delta_accuracy <= delta_accuracy_threshold) and delta_accuracy > 0 :
-            # Save the best model thus far if the above two criteria are met.
-            print 'Saving model...' 
-            saver = tf.train.Saver([W_conv1, b_conv1, W_fc1, b_fc1, W_fc2, b_fc2])
-            save_path = saver.save(sess, filename_weight_bias)
-            check_model = tf.reduce_mean(W_conv1).eval()
-            best_epoch = n*fractional_epoch
-            np.savetxt(filename_measure, Table_measure[:n,:])
+          # Save the best model thus far if the above two criteria are met.
+          print 'Saving model...'
+          saver = tf.train.Saver([W_conv1, b_conv1, W_fc1, b_fc1, W_fc2, b_fc2])
+          save_path = saver.save(sess, filename_weight_bias)
+          check_model = tf.reduce_mean(W_conv1).eval()
+          best_epoch = n*fractional_epoch
+          np.savetxt(filename_measure, Table_measure[:n,:])
         # Check for overtraining/ overfitting. If so, stop training and break out of the
         # training iteration per epoch loop.
         if train_accuracy > test_accuracy and test_accuracy > 0.8 :
@@ -423,7 +422,7 @@ if train_neural_network :
             # Reset counter otherwise. 
             n_overtraining_counter = 0
             m = 0
-        if n_overtraining_counter >= overtraining_threshold :
+        if n_overtraining_counter >= overtraining_threshold or np.isnan(Cost):
           print 'Overtraining encountered. Stopping training.'
           Table_measure = Table_measure[:n,:]
           Overtraining = T
