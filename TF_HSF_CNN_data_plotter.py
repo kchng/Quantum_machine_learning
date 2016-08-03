@@ -12,8 +12,11 @@ T_c = 0.36
 # Initial guess solution of critical temperature
 T_c_guess = 0.5
 
-filename_measurements = '20160802-1934_measurements.dat'
-filename_result = '20160802-1934_result.dat'
+# Threshold of difference between train_accuracy and test_accuracy
+delta_accuracy_threshold = 0.025
+
+filename_measurements = '20160803-0138_measurements.dat'
+filename_result = '20160803-0138_result.dat'
 title = '$\mathrm{2\ (conv + ReLU),\ learning\ rate = 1e-3,\ \\lambda/n_{training\ data} = 0.0001}$'
 
 def quadratic( x ):
@@ -52,6 +55,19 @@ output_neuron2    = data_result[:,1]
 output_neuron1    = data_result[:,2]
 accuracy          = data_result[:,3]
 
+# Find the training epoch at which model was saved.
+mask = ( ((training_accuracy - test_accuracy) < delta_accuracy_threshold) & 
+  ((training_accuracy - test_accuracy) > 0.0) & (test_accuracy > 0.8) )
+training_epoch = training_epochs[mask]
+
+best_test_accuracy = test_accuracy[mask][0]
+epoch_at_which_model_saved = []
+epoch_at_which_model_saved.append(training_epoch[0])
+for i in range(np.sum(mask)-1) :
+    if test_accuracy[mask][i+1] > best_test_accuracy :
+        best_test_accuracy = test_accuracy[mask][i+1]
+        epoch_at_which_model_saved.append(training_epoch[i+1])
+
 # d (accuracy) / d (temperature)
 velocity = np.zeros( np.shape( temperature ) ) 
 
@@ -63,7 +79,9 @@ A1, B1, C1, D1 = cubic_spline_interpolation.ClampedCubicSplineCoefficients( temp
 T_c_experiment = newtons_method( quadratic, quadratic1, T_c_guess )
 T_c_experimenty = quadratic(T_c_experiment)[0]
 
+print 'T_c             = %.2f' % T_c
 print 'T_c, experiment = %.2f' % T_c_experiment
+print 'Percent error   = %.2g %%' % (abs(1.-T_c_experiment/T_c)*100)
 
 plt.close('all')
 
@@ -80,6 +98,13 @@ fig = plt.figure( figsize = plt.figaspect( 1.0 ) *3.0 )
 
 ax11 = fig.add_subplot( 2, 1, 1 )
 
+for i in range(len(epoch_at_which_model_saved)) :
+    ax11.plot([epoch_at_which_model_saved[i],
+    epoch_at_which_model_saved[i]],[0,1], ls='-.', 
+    label = '', color=Color[2], lw=2, alpha=0.5)
+ax11.plot([],[],ls='-.', 
+  label = '$\mathrm{Epoch\ at\ which\ model\ saved}$', color=Color[2], lw=2, 
+  alpha=0.5)
 ax11.plot(training_epochs, training_accuracy, ls='-', 
   label = '$\mathrm{Training\ accuracy}$', color=Color[1], lw=2, alpha=1.0)
 ax11.plot(training_epochs, test_accuracy    , ls='-', 
@@ -141,3 +166,4 @@ plt.subplots_adjust( top=0.95 )
 #mng = plt.get_current_fig_manager()
 #mng.window.showMaximized() 
 plt.savefig( date + '_plot.png', dpi=300)
+print 'Plot saved.'
