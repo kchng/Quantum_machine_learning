@@ -195,6 +195,15 @@ if train_neural_network == T or not(perform_classification) :
 
   # Number of training cycle per training epoch
   iteration_per_epoch=n_train_data/batch_size
+  
+  print 'Number of training data: %d' % n_train_data
+elif train_neural_network == F and perform_classification_with_label :
+  n_train_data = len(dtau)*ndata_per_temp - len(HSF.test.labels)
+  print 'Number of training data: %d' % n_train_data
+else :
+  n_train_data = -1
+  while n_train_data < 0 :
+    n_train_data = input('Number of training data used:' )
 
 
 
