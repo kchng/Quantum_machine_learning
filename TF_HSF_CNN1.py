@@ -24,8 +24,8 @@ T, F = True, False
 # (T) or it can also be used for performing classification using raw unlabelled
 # data by setting train_neural_network to (F) and perform_classification_with_label
 # to (F).
-train_neural_network = T
-continue_training_using_previous_model = F
+train_neural_network = F
+continue_training_using_previous_model = T
 
 # Number of training epoch
 epochs = 50
@@ -77,7 +77,7 @@ filename = './N%dx%dx%d_L200_U%d_Mu0_T_shuffled' % (nspin,nspin,nspin,U) + '_%.2
 rawdata_filename       = './N%dx%dx%d_L200_U%d_Mu0_T' % (nspin,nspin,nspin,U) + '%s.HSF.stream'
 
 # Trained model
-filename_trained_model = "./model.ckpt" 
+filename_trained_model = "./20160802-1614_model.ckpt" 
 
 # Output model filename
 filename_weight_bias   = "./" + start_date_time + "_model.ckpt"
@@ -422,7 +422,7 @@ if train_neural_network :
           save_path = saver.save(sess, filename_weight_bias)
           check_model = tf.reduce_mean(W_conv1).eval()
           best_epoch = n*fractional_epoch
-          np.savetxt(filename_measure, Table_measure[:n,:])
+          np.savetxt(filename_measure, Table_measure[:n+1,:])
         # Check for overtraining/ overfitting. If so, stop training and break out of the
         # training iteration per epoch loop.
         if train_accuracy > test_accuracy and test_accuracy > 0.8 :
@@ -442,7 +442,7 @@ if train_neural_network :
             m = 0
         if n_overtraining_counter >= overtraining_threshold or np.isnan(Cost):
           print 'Overtraining encountered. Stopping training.'
-          Table_measure = Table_measure[:n,:]
+          Table_measure = Table_measure[:n+1,:]
           Overtraining = T
           break
         else :

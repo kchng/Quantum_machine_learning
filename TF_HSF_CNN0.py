@@ -404,7 +404,7 @@ if train_neural_network :
           save_path = saver.save(sess, filename_weight_bias)
           check_model = tf.reduce_mean(W_conv1).eval()
           best_epoch = n*fractional_epoch
-          np.savetxt(filename_measure, Table_measure[:n,:])
+          np.savetxt(filename_measure, Table_measure[:n+1,:])
         # Check for overtraining/ overfitting. If so, stop training and break out of the
         # training iteration per epoch loop.
         if train_accuracy > test_accuracy and test_accuracy > 0.8 :
@@ -424,7 +424,7 @@ if train_neural_network :
             m = 0
         if n_overtraining_counter >= overtraining_threshold or np.isnan(Cost):
           print 'Overtraining encountered. Stopping training.'
-          Table_measure = Table_measure[:n,:]
+          Table_measure = Table_measure[:n+1,:]
           Overtraining = T
           break
         else :
