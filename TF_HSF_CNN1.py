@@ -24,11 +24,11 @@ T, F = True, False
 # (T) or it can also be used for performing classification using raw unlabelled
 # data by setting train_neural_network to (F) and perform_classification_with_label
 # to (F).
-train_neural_network = F
-continue_training_using_previous_model = T
+train_neural_network = T
+continue_training_using_previous_model = F
 
 # Number of training epoch
-epochs = 50
+epochs = 100
 # Size of training batch
 batch_size = 200
 # Threshold of difference between train_accuracy and test_accuracy
@@ -112,10 +112,10 @@ filter_w = filter_d
 eta0 = 1e-3
 
 #   decay rate
-decay_rate = 0.90
+decay_rate = 0.83
 
 # L2 regularization parameter
-lambdha_per_n_train_data = 0 # 0.0001
+lambdha_per_n_train_data = 0.0001
 
 
 
