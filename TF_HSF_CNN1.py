@@ -25,7 +25,7 @@ T, F = True, False
 # data by setting train_neural_network to (F) and perform_classification_with_label
 # to (F).
 train_neural_network = T
-continue_training_using_previous_model = F
+continue_training_using_trained_model = T
 
 # Number of training epoch
 epochs = 100
@@ -49,11 +49,11 @@ perform_classification_with_label = T
 U = 9
 # System size
 #   number of spin in each of the cube dimension
-nspin = 4
-#   number of "time" dimension
-n_time_dimension = 200
+n_x = 4
+#   number of imaginary time dimension
+L = 200
 #   Volume of tesseract
-V4d = n_time_dimension*(nspin)**3
+V4d = L*(n_x)**3
 
 # Critical temperature
 Tc = 0.36
@@ -71,25 +71,25 @@ start_date_time = '%s%s%s-%s%s' % (year, month, day, hour, minute)
 
 # Input labelled and shuffled filename for training and performaing classification
 # with labels.
-filename = './N%dx%dx%d_L200_U%d_Mu0_T_shuffled' % (nspin,nspin,nspin,U) + '_%.2d.dat'
+filename = './N%dx%dx%d_L200_U%d_Mu0_T_shuffled' % (n_x,n_x,n_x,U) + '_%.2d.dat'
 
 # Input raw filename for performing classification without labels.
-rawdata_filename       = './N%dx%dx%d_L200_U%d_Mu0_T' % (nspin,nspin,nspin,U) + '%s.HSF.stream'
+rawdata_filename       = './N%dx%dx%d_L200_U%d_Mu0_T' % (n_x,n_x,n_x,U) + '%s.HSF.stream'
 
 # Trained model
-filename_trained_model = "./20160802-1614_model.ckpt" 
+filename_trained_model = "./model.ckpt" 
 
 # Output model filename
-filename_weight_bias   = "./" + start_date_time + "_model.ckpt"
+filename_weight_bias   = "./model_" + start_date_time + ".ckpt"
 
 # Output of training measurements filename
-filename_measure       = "./" + start_date_time + "_measurements.dat"
+filename_measure       = "./measurements_" + start_date_time + ".dat"
 
 # Output of classification result with labels
-filename_result        = "./" + start_date_time + "_result.dat"
+filename_result        = "./result_" + start_date_time + ".dat"
 
 # Output of classification result from raw data (without labels)
-filename_classified    = "./" + start_date_time + "_classified.dat"
+filename_classified    = "./classified_" + start_date_time + ".dat"
 
 # Neural network architecture settings -----------------------------------------------
 
@@ -152,7 +152,7 @@ else :
 
 if perform_classification_with_label == True :
   # Get temperature and save them to a file.
-  os.system("ls -l N%dx%dx%d_L200_U%d_Mu0_T*.HSF.stream | awk '{print $9}' | sed -e s/N%dx%dx%d_L200_U%d_Mu0_T//g -e s/.HSF.stream//g > dtau.dat" %(nspin,nspin,nspin,U,nspin,nspin,nspin,U))
+  os.system("ls -l N%dx%dx%d_L200_U%d_Mu0_T*.HSF.stream | awk '{print $9}' | sed -e s/N%dx%dx%d_L200_U%d_Mu0_T//g -e s/.HSF.stream//g > dtau.dat" %(n_x,n_x,n_x,U,n_x,n_x,n_x,U))
   dtau = np.genfromtxt("dtau.dat")
   # Array of shuffled file's file number 
   filenumber = np.arange(1,len(dtau)+1,1)
@@ -165,7 +165,7 @@ if perform_classification_with_label == True :
 
 else :
   # Get temperature and save them to a file.
-  os.system("ls -l N%dx%dx%d_L200_U%d_Mu0_T*.HSF.stream | awk '{print $9}' | sed -e s/N%dx%dx%d_L200_U%d_Mu0_T//g -e s/.HSF.stream//g > dtau.dat" %(nspin,nspin,nspin,U,nspin,nspin,nspin,U))
+  os.system("ls -l N%dx%dx%d_L200_U%d_Mu0_T*.HSF.stream | awk '{print $9}' | sed -e s/N%dx%dx%d_L200_U%d_Mu0_T//g -e s/.HSF.stream//g > dtau.dat" %(n_x,n_x,n_x,U,n_x,n_x,n_x,U))
   # Load temperature into a list of string
   dtau = np.genfromtxt("dtau.dat",dtype='str')
   # The number of lines to skip at the beginning of the file if not all of the data is
@@ -181,7 +181,7 @@ else :
   # Provide file information to the data_reader module.
   HSF = data_reader.insert_file_info(rawdata_filename,dtau)
   # Load classification data.
-  HSF = HSF.load_classification_data(nrows=ndata_per_temp, ncols=nspin*nspin*nspin*n_time_dimension, 
+  HSF = HSF.load_classification_data(nrows=ndata_per_temp, ncols=n_x*n_x*n_x*L, 
         SkipHeader=sh, load_ndata_per_file=classification_data_per_temp)
 
 if train_neural_network == T or not(perform_classification) :
@@ -217,7 +217,7 @@ else :
 # bits among which only one is (1), the opposite is called one-cold) 2
 # -dimensional vector vector indicating which digit class the 
 # corresponding HSF data belongs to.
-x = tf.placeholder(tf.float32, [None, nspin*nspin*nspin * n_time_dimension])
+x = tf.placeholder(tf.float32, [None, n_x*n_x*n_x * L])
 y_ = tf.placeholder(tf.float32, [None, n_output_neuron])
 
 # To prevent 0 gradients and break symmetry, one should genereally
@@ -256,17 +256,17 @@ def max_pool_2x2x2(x, pad='SAME'):
 # The convolution will compute n features for each mxmxm block. Its weight
 # tensor will have a shape of [filter_Depth, filter_height, filter_width, 
 # in_channels, out_channels].
-W_conv1 = weight_variable([filter_d,filter_h,filter_w,n_time_dimension,n_feature_map1])
+W_conv1 = weight_variable([filter_d,filter_h,filter_w,L,n_feature_map1])
 b_conv1 = bias_variable([n_feature_map1])
 
 # To apply the layer, first reshape x to a 4D tensor, with the second and
 # third dimensions correspondings to image width and height, and the final
 # dimension corresponding to the number of color channels.
-x_image = tf.reshape(x, [-1,nspin,nspin,nspin,n_time_dimension])
+x_image = tf.reshape(x, [-1,n_x,n_x,n_x,L])
 
 # Then convolve x_image with the weight tensor, add the bias, apply the
 # ReLU function. Since no padding is used in conv3d, i.e. padding = 'VALID',
-# the output size : n_feature_map1 x nspin-1 x nspin-1 x nspin-1
+# the output size : n_feature_map1 x n_x-1 x n_x-1 x n_x-1
 h_conv1 = tf.nn.relu(conv3d(x_image, W_conv1) + b_conv1)
 
 # Second Convolution Layer
@@ -281,11 +281,11 @@ h_conv2 = tf.nn.relu(conv3d(h_conv1, W_conv2) + b_conv2)
 # allow processing on the entire image. The tensor from the previous layer
 # is reshaped into a batch of vectors, multiply by a weight matrix, add a
 # bias, and apply a ReLU.
-W_fc1 = weight_variable([n_feature_map2*(nspin-2)**3, n_fully_connected_neuron])
+W_fc1 = weight_variable([n_feature_map2*(n_x-2)**3, n_fully_connected_neuron])
 b_fc1 = bias_variable([n_fully_connected_neuron])
 
-h_pool1_flat = tf.reshape(h_conv2, [-1, n_feature_map2*(nspin-2)**3])
-h_fc1 = tf.nn.relu(tf.matmul(h_pool1_flat, W_fc1) + b_fc1)
+h_conv2_flat = tf.reshape(h_conv2, [-1, n_feature_map2*(n_x-2)**3])
+h_fc1 = tf.nn.relu(tf.matmul(h_conv2_flat, W_fc1) + b_fc1)
 
 # Dropout
 # To reduce overfitting, dropout will be applied before the readout layer.
@@ -328,7 +328,7 @@ if train_neural_network == False :
   if os.path.isfile(filename_trained_model) == False and continue_training_if_model_not_found :
     print '%s is not found in the current directory, starting training...' % filename_trained_model
     train_neural_network = True
-    continue_training_using_previous_model = False
+    continue_training_using_trained_model = False
   else :
     while not(os.path.isfile(filename_trained_model)) :
       print '%s is not found in the current directory.' % filename_trained_model
@@ -349,32 +349,37 @@ if train_neural_network :
 
   # Check if the trained model checkpoint file is located in the current file directory
   # before restoring.
-  if continue_training_using_previous_model :
+  if continue_training_using_trained_model :
     skip = False
     file_exist = os.path.isfile(filename_trained_model)
     while (not(file_exist) and not(skip)) :
-      print '%s is not found in the current directory, starting training...' % filename_trained_model
-      skip = raw_input('Select y to continue training from scratch or n to continue training using existing model: ')
-      while skip not in ['y','n']:
-        skip = raw_input('Select y to continue training from scratch or n to continue training using existing model: ')
+      print '%s is not found in the current directory.' % filename_trained_model.replace('./','')
+      skip = raw_input('Select T to start training from scratch or F to enter the filename of another trained model: ')
+      while skip not in ['T','F']:
+        skip = raw_input('Select T or F: ')
+      if skip == 'T' :
+        skip = True
+      else :
+        skip = False
       if skip :
         file_exist = False
       else :
         filename_trained_model = raw_input('Input trained model filename: ')
         while not(os.path.isfile(filename_trained_model)) :
-          print '%s is not found in the current directory.'%filename_trained_model
+          print '%s is not found in the current directory.'% filename_trained_model.replace('./','')
           filename_trained_model = raw_input('Input trained model filename: ')
           filename_trained_model = './' + filename_trained_model
         if os.path.isfile(filename_trained_model) :
           skip = True
 
-    print 'Continue training using %s.' % filename_trained_model.replace('./','')
-    saver = tf.train.Saver([W_conv1, b_conv1, W_conv2, b_conv2, W_fc1, b_fc1, W_fc2, b_fc2])
-    # Restore trained model.
-    save_path = saver.restore(sess, filename_trained_model)
+    if file_exist :
+      print 'Continue training using %s.' % filename_trained_model.replace('./','')
+      saver = tf.train.Saver([W_conv1, b_conv1, W_conv2, b_conv2, W_fc1, b_fc1, W_fc2, b_fc2])
+      # Restore trained model.
+      save_path = saver.restore(sess, filename_trained_model)
 
   # Initialize best test accuracy. 
-  best_test_accuracy = 0.8
+  best_test_accuracy = 0.85
 
   # Calculate the number of data to collect for the whole training cycle.
   ndata_collect_per_epoch = round(float(n_train_data)/batch_size/100)
@@ -399,7 +404,7 @@ if train_neural_network :
   # Initialise counter for checking overtraining/ overfitting.
   n_overtraining_counter = 0
   m = 0
-  Overtraining = F
+  Overtraining = False
 
   for j in range(epochs):
     # Break out of the training epoch loop if overtraining is encountered.
@@ -413,7 +418,7 @@ if train_neural_network :
         test_accuracy = accuracy.eval(feed_dict={
                          x: HSF.test.images, y_: HSF.test.labels, keep_prob: 1.0})
         Cost = cross_entropy.eval(feed_dict={x: batch[0], y_: batch[1], keep_prob: 1.0})
-        print "%.2fs, epoch %.2f, training accuracy %g, test accuracy %g, cost %g"%(time.time()-start_time,n*fractional_epoch, train_accuracy, test_accuracy, Cost)
+        print '%.2fs, epoch %.2f, training accuracy %g, test accuracy %g, cost %g' % (time.time()-start_time,(n+1)*fractional_epoch, train_accuracy, test_accuracy, Cost)
         Table_measure[n,0] = n*fractional_epoch
         Table_measure[n,1] = train_accuracy
         Table_measure[n,2] = test_accuracy
@@ -426,7 +431,7 @@ if train_neural_network :
           # Update the best test accuracy
           best_test_accuracy = test_accuracy
           # Save the best model thus far if the above two criteria are met.
-          print 'Saving model...'
+          print 'Saving model %s and measurements %s.' % (filename_weight_bias.replace('./',''), filename_measure.replace('./',''))
           saver = tf.train.Saver([W_conv1, b_conv1, W_conv2, b_conv2, W_fc1, b_fc1, W_fc2, b_fc2])
           save_path = saver.save(sess, filename_weight_bias)
           check_model = tf.reduce_mean(W_conv1).eval()
@@ -452,10 +457,10 @@ if train_neural_network :
         if n_overtraining_counter >= overtraining_threshold or np.isnan(Cost):
           print 'Overtraining encountered. Stopping training.'
           Table_measure = Table_measure[:n+1,:]
-          Overtraining = T
+          Overtraining = True
           break
         else :
-          Overtraining = F
+          Overtraining = False
         n += 1
       train_step.run(feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
 
@@ -476,11 +481,11 @@ if train_neural_network :
         check_model = tf.reduce_mean(W_conv1).eval()
         best_epoch = ndata_collect*fractional_epoch
 
-    print "%.2fs, epoch %.2f, training accuracy %g, test accuracy %g, cost %g"%(time.time()-start_time,(n+1)*fractional_epoch, train_accuracy, test_accuracy, Cost)
+    print '%.2fs, epoch %.2f, training accuracy %g, test accuracy %g, cost %g' % (time.time()-start_time,(n+1)*fractional_epoch, train_accuracy, test_accuracy, Cost)
 
-  print 'Best training epoch: %g'%best_epoch
+  print 'Best training epoch: %g' % best_epoch
 
-  print "Model saved in file: ", save_path
+  print 'Model saved in file: ', save_path
 
   # To proceed, load the best (saved) model instead of the last training model.
   saver.restore(sess, filename_weight_bias)
@@ -504,11 +509,11 @@ else :
   # To proceed, load the trained model.
   saver.restore(sess, filename_trained_model)
 
-print 'Performing classification...'
+print 'Performing classification using %s.' % filename_trained_model.replace('./','')
 
 # Classification with labels ---------------------------------------------------------
 
-if perform_classification_with_label == T :
+if perform_classification_with_label == True :
 
   # First column : Temperature
   # Second column: Average classified output of the second neuron
@@ -533,7 +538,7 @@ if perform_classification_with_label == T :
   Table[:,3] = Table[:,3]/Table[:,-1].astype('float')
 
   np.savetxt(filename_result, Table)
-  print "Result saved in file: ", filename_result
+  print 'Result saved as %s.' % filename_result
 
 # Classification on raw data --------------------------------------------------------
 
@@ -560,4 +565,4 @@ else :
   Table[:,2] = 1.0-Table[:,1]
 
   np.savetxt(filename_classified, Table)
-  print "Classified result saved in file: ", filename_classified
+  print 'Classified result saved as %s.' % filename_classified
