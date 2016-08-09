@@ -9,26 +9,28 @@ import sys
 # Potential energy
 U = 9
 # System size
-nspin = 4
+n_x = 4
+# Imaginary time
+L = 200
 # Critical temperature
 Tc = 0.36
 # Memory setting
 memory_setting = 'medium'
 
-filename = './N%dx%dx%d_L200_U%d_Mu0_T' % (nspin,nspin,nspin,U) + '%.3f.HSF.stream'
+filename = './N%dx%dx%d_L200_U%d_Mu0_T' % (n_x,n_x,n_x,U) + '%.3f.HSF.stream'
 
 # Get temperature and save them to a file.
-os.system("ls -l N%dx%dx%d_L200_U%d_Mu0_T*.HSF.stream | awk '{print $9}' | sed -e s/N%dx%dx%d_L200_U%d_Mu0_T//g -e s/.HSF.stream//g > dtau.dat" %(nspin,nspin,nspin,U,nspin,nspin,nspin,U))
+os.system("ls -l N%dx%dx%d_L%d_U%d_Mu0_T*.HSF.stream | awk '{print $9}' | sed -e s/N%dx%dx%d_L%d_U%d_Mu0_T//g -e s/.HSF.stream//g > dtau.dat" %(n_x,n_x,n_x,L,U,n_x,n_x,n_x,L,U))
 
 # Load temperature into a list of string
 dtau = np.genfromtxt("dtau.dat",dtype='str')
 
 # Rename files for consistent formating
 for i in range(len(dtau)):
-   os.system("mv N%dx%dx%d_L200_U%d_Mu0_T%s.HSF.stream N%dx%dx%d_L200_U%d_Mu0_T%.3f.HSF.stream" % (nspin,nspin,nspin,U,dtau[i],nspin,nspin,nspin,U,float(dtau[i])) )
+   os.system("mv N%dx%dx%d_L%d_U%d_Mu0_T%s.HSF.stream N%dx%dx%d_L%d_U%d_Mu0_T%.3f.HSF.stream" % (n_x,n_x,n_x,L,U,dtau[i],n_x,n_x,n_x,L,U,float(dtau[i])) )
 
 # Get reformatted temperature and save them to a file.
-os.system("ls -l N%dx%dx%d_L200_U%d_Mu0_T*.HSF.stream | awk '{print $9}' | sed -e s/N%dx%dx%d_L200_U%d_Mu0_T//g -e s/.HSF.stream//g > dtau.dat" % (nspin,nspin,nspin,U,nspin,nspin,nspin,U) )
+os.system("ls -l N%dx%dx%d_L%d_U%d_Mu0_T*.HSF.stream | awk '{print $9}' | sed -e s/N%dx%dx%d_L%d_U%d_Mu0_T//g -e s/.HSF.stream//g > dtau.dat" % (n_x,n_x,n_x,L,U,n_x,n_x,n_x,L,U) )
 
 dtau = np.genfromtxt("dtau.dat")
 

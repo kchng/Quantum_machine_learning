@@ -71,10 +71,10 @@ start_date_time = '%s%s%s-%s%s' % (year, month, day, hour, minute)
 
 # Input labelled and shuffled filename for training and performaing classification
 # with labels.
-filename = './N%dx%dx%d_L200_U%d_Mu0_T_shuffled' % (n_x,n_x,n_x,U) + '_%.2d.dat'
+filename = './N%dx%dx%d_L%d_U%d_Mu0_T_shuffled' % (n_x,n_x,n_x,L,U) + '_%.2d.dat'
 
 # Input raw filename for performing classification without labels.
-rawdata_filename       = './N%dx%dx%d_L200_U%d_Mu0_T' % (n_x,n_x,n_x,U) + '%s.HSF.stream'
+rawdata_filename       = './N%dx%dx%d_L%d_U%d_Mu0_T' % (n_x,n_x,n_x,L,U) + '%s.HSF.stream'
 
 # Trained model
 filename_trained_model = "./model.ckpt" 
@@ -143,7 +143,7 @@ else :
 
 if perform_classification_with_label == True :
   # Get temperature and save them to a file.
-  os.system("ls -l N%dx%dx%d_L200_U%d_Mu0_T*.HSF.stream | awk '{print $9}' | sed -e s/N%dx%dx%d_L200_U%d_Mu0_T//g -e s/.HSF.stream//g > dtau.dat" %(n_x,n_x,n_x,U,n_x,n_x,n_x,U))
+  os.system("ls -l N%dx%dx%d_L%d_U%d_Mu0_T*.HSF.stream | awk '{print $9}' | sed -e s/N%dx%dx%d_L%d_U%d_Mu0_T//g -e s/.HSF.stream//g > dtau.dat" %(n_x,n_x,n_x,L,U,n_x,n_x,n_x,L,U))
   dtau = np.genfromtxt("dtau.dat")
   # Array of shuffled file's file number 
   filenumber = np.arange(1,len(dtau)+1,1)
@@ -156,7 +156,7 @@ if perform_classification_with_label == True :
 
 else :
   # Get temperature and save them to a file.
-  os.system("ls -l N%dx%dx%d_L200_U%d_Mu0_T*.HSF.stream | awk '{print $9}' | sed -e s/N%dx%dx%d_L200_U%d_Mu0_T//g -e s/.HSF.stream//g > dtau.dat" %(n_x,n_x,n_x,U,n_x,n_x,n_x,U))
+  os.system("ls -l N%dx%dx%d_L%d_U%d_Mu0_T*.HSF.stream | awk '{print $9}' | sed -e s/N%dx%dx%d_L%d_U%d_Mu0_T//g -e s/.HSF.stream//g > dtau.dat" %(n_x,n_x,n_x,L,U,n_x,n_x,n_x,L,U))
   # Load temperature into a list of string
   dtau = np.genfromtxt("dtau.dat",dtype='str')
   # The number of lines to skip at the beginning of the file if not all of the data is
