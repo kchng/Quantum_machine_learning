@@ -35,13 +35,13 @@ class insert_file_info :
         if abs( len(self.filenumber_below) - len(self.filenumber_above) ) > 0 :
             print ('Warning! Make sure there are same number of files above and below the boundary. Exiting...')
             sys.exit()
-
+        
         if boundary == filenumber[filenumber==boundary] :
             self.boundary_file_exist = True
-            print 'Boundary file data not exist.'
+            print '\nBoundary file data exists.\n'
         else :
             self.boundary_file_exist = False
-            print 'Boundary file data not found.'
+            print '\nBoundary file data not found.\n'
 
         print 'File shape: %d x %d' % (self.nrows, self.ncols)
  
