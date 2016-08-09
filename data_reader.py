@@ -11,7 +11,7 @@ class insert_file_info :
     
     def __init__(self, full_file_path, filenumber, batch_size = 50, 
         use_random_seed = False, include_validation_data = False, 
-        performing_classification = False) :
+        load_test_data_only = False) :
         """ full_file_path : full file path of the shuffled data
             filenumber     : An array of file number """
         self.filename         = full_file_path.rsplit('\\', 1)[-1]
@@ -24,8 +24,8 @@ class insert_file_info :
         self.nfile            = len(filenumber)
         self.batch_size       = batch_size
         self.current_index    = 0
-        self.performing_classification = performing_classification
-        if self.performing_classification :
+        self.load_test_data_only = load_test_data_only
+        if self.load_test_data_only :
             self.include_validation_data = False
         self.delimiter        = [1 for i in xrange(self.ncols)]
 
@@ -271,7 +271,7 @@ class insert_file_info :
    
         start_time = time.time()
        
-        if not(self.performing_classification) :
+        if not(self.load_test_data_only) :
 
             TRAIN_DATA = np.zeros((nfile_train*self.nrows,self.ncols))
             #train_images = np.zeros((nfile_train*self.nrows,self.ncols-1))
@@ -310,7 +310,7 @@ class insert_file_info :
             validation_labels = VALIDATION_DATA[:,-2].astype('int')
             validation_temps  = VALIDATION_DATA[:,-1].astype('int')
 
-        if not(self.performing_classification) :
+        if not(self.load_test_data_only) :
             data_sets.train      = insert_file_info.DataSet(train_images, train_labels,
                                    train_temps, self.nrows, nfile_train, nfile_test, 
                                    nfile_val, self.full_file_path, data_type = 'train')
@@ -355,7 +355,7 @@ class insert_file_info :
         elif n_data_check < 0 :
             nfile_train -= n_data_check
         
-        if not(self.performing_classification) :
+        if not(self.load_test_data_only) :
  
             train_images = np.array([]).astype('int')
             train_labels = np.array([]).astype('int')
@@ -397,7 +397,7 @@ class insert_file_info :
         #    validation_labels = np.array([]).astype('int')
         #    validation_temps  = np.array([]).astype('int')
 
-        if not(self.performing_classification) :
+        if not(self.load_test_data_only) :
             data_sets.train      = insert_file_info.DataSet(train_images, train_labels,
                                    train_temps, self.nrows, nfile_train, nfile_test, 
                                    nfile_val, self.full_file_path, data_type = 'train')
