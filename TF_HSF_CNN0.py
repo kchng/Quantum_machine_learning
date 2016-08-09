@@ -38,6 +38,9 @@ batch_size = 200
 delta_accuracy_threshold = 0.025
 # Threshold for stopping training when overtraining is encountered.
 overtraining_threshold = 10
+# Initialize best test accuracy. The minimum test_accuracy for model and measurements
+# to be saved.
+best_test_accuracy = 0.85
 
 # Classification can be performed on labelled or raw data. Set
 # perform_classification_with_label to (F) to perform classification on labelled
@@ -427,9 +430,6 @@ if train_neural_network :
       saver = tf.train.Saver([W_conv1, b_conv1, W_fc1, b_fc1, W_fc2, b_fc2])
       # Restore trained model.
       save_path = saver.restore(sess, filename_trained_model)
-
-  # Initialize best test accuracy. 
-  best_test_accuracy = 0.85
 
   # Calculate the number of data to collect for the whole training cycle.
   ndata_collect_per_epoch = round(float(n_train_data)/batch_size/100)
