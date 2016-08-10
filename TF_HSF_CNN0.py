@@ -485,7 +485,7 @@ if train_neural_network :
           saver = tf.train.Saver([W_conv1, b_conv1, W_fc1, b_fc1, W_fc2, b_fc2])
           save_path = saver.save(sess, filename_weight_bias)
           check_model = tf.reduce_mean(W_conv1).eval()
-          best_epoch = n*fractional_epoch
+          best_epoch = (n+1)*fractional_epoch
           np.savetxt(filename_measure, Table_measure[:n+1,:])
         # Check for overtraining/ overfitting. If so, stop training and break out of the
         # training iteration per epoch loop.
