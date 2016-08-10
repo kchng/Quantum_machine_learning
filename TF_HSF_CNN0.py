@@ -28,10 +28,10 @@ train_neural_network = T
 continue_training_using_trained_model = T
 
 # Select (T) to use one U for training or (F) to use data set with 2 U for training.
-use_single_U = True
+use_single_U = False
 
 # Number of training epoch
-epochs = 100
+epochs = 500
 # Size of training batch
 batch_size = 200
 # Threshold of difference between train_accuracy and test_accuracy
@@ -40,7 +40,7 @@ delta_accuracy_threshold = 0.025
 overtraining_threshold = 10
 # Initialize best test accuracy. The minimum test_accuracy for model and measurements
 # to be saved.
-best_test_accuracy = 0.85
+best_test_accuracy = 0.5
 
 # Classification can be performed on labelled or raw data. Set
 # perform_classification_with_label to (F) to perform classification on labelled
@@ -229,6 +229,7 @@ if perform_classification == False :
 
   # Array of shuffled file's file number 
   filenumber = np.genfromtxt("filenumber.dat")
+  filenumber = filenumber[:40]
   if np.mod(len(filenumber),2) == 1:
     print 'Attention! When using data set with two Us for training, make sure that there are EVEN number of files. Exiting...'
     sys.exit() 
@@ -455,6 +456,7 @@ if train_neural_network :
   n_overtraining_counter = 0
   m = 0
   Overtraining = False
+  best_epoch   = 0
 
   for j in range(epochs):
     # Break out of the training epoch loop if overtraining is encountered.
@@ -489,7 +491,7 @@ if train_neural_network :
           np.savetxt(filename_measure, Table_measure[:n+1,:])
         # Check for overtraining/ overfitting. If so, stop training and break out of the
         # training iteration per epoch loop.
-        if train_accuracy > test_accuracy and test_accuracy > 0.8 :
+        if train_accuracy > test_accuracy :
           if m == 0 :
             # If training accuracy is greater than test accuracy on first account, set
             # counter to 1.
@@ -533,17 +535,19 @@ if train_neural_network :
 
     print '%.2fs, epoch %.2f, training accuracy %g, test accuracy %g, cost %g' % (time.time()-start_time,(n+1)*fractional_epoch, train_accuracy, test_accuracy, Cost)
 
-  print 'Best training epoch: %g' % best_epoch
+  if best_epoch == 0 :
+    print 'Training model is not saved as saving criteria are not met.'
+  else :
+    print 'Best training epoch: %g' % best_epoch
+    print 'Model saved in file: ', save_path
 
-  print 'Model saved in file: ', save_path
+    # To proceed, load the best (saved) model instead of the last training model.
+    saver.restore(sess, filename_weight_bias)
 
-  # To proceed, load the best (saved) model instead of the last training model.
-  saver.restore(sess, filename_weight_bias)
-
-  # Check if the saved model and the restored model are the same.
-  if check_model != tf.reduce_mean(W_conv1).eval() :
-    print 'Warning! Best training model and the restored model is incompatible. Exiting...'
-    sys.exit()
+    # Check if the saved model and the restored model are the same.
+    if check_model != tf.reduce_mean(W_conv1).eval() :
+      print 'Warning! Best training model and the restored model is incompatible. Exiting...'
+      sys.exit()
 
   # Save the measurements:
   # First column : Training epochs
