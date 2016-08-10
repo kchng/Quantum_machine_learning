@@ -100,9 +100,9 @@ else :
         filename = './N%dx%dx%d_L%d_U%d+U%d_Mu0_T_shuffled' % (n_x,n_x,n_x,L,U2,U1) + '_%.2d.dat'
 
 # Trained model
-filename_trained_model = "./model.ckpt" 
+filename_trained_model = "./20160810-0342_model.ckpt" 
 
-name_output_file_by_date_first = F
+name_output_file_by_date_first = T
 if name_output_file_by_date_first == False : 
     # Output model filename
     filename_weight_bias   = "./model_" + start_date_time + ".ckpt"
@@ -151,12 +151,12 @@ eta = 1e-4
 
 
 # Don't change any of the following variables.
-if use_single_U :
-  perform_classification = T
-else :
-  perform_classification = F
+#if use_single_U :
+#  perform_classification = T
+#else :
+#  perform_classification = F
 
-if train_neural_network == T :
+if train_neural_network :
   print 'Process: training.'
 
   if not(use_single_U) :
@@ -186,15 +186,32 @@ else :
   # When load_test_data_only is set to True, only test data will be loaded.
   load_test_data_only = T
 
-if perform_classification_with_label == True and perform_classification == True :
-  # Get temperature and save them to a file.
-  os.system("ls -l N%dx%dx%d_L%d_U%d_Mu0_T*.HSF.stream | awk '{print $9}' | sed -e s/N%dx%dx%d_L%d_U%d_Mu0_T//g -e s/.HSF.stream//g > dtau.dat" %(n_x,n_x,n_x,L,U,n_x,n_x,n_x,L,U))
-  dtau = np.genfromtxt("dtau.dat")
-  os.remove("dtau.dat")
+if perform_classification_with_label :
+  if use_single_U :
+    # Get temperature and save them to a file.
+    os.system("ls -l N%dx%dx%d_L%d_U%d_Mu0_T*.HSF.stream | awk '{print $9}' | sed -e s/N%dx%dx%d_L%d_U%d_Mu0_T//g -e s/.HSF.stream//g > dtau.dat" %(n_x,n_x,n_x,L,U,n_x,n_x,n_x,L,U))
+    dtau = np.genfromtxt("dtau.dat")
+    os.remove("dtau.dat")
+  # Array of shuffled file's file number 
+  else :
+    # Get temperature and save them to a file.
+    os.system("ls -l N%dx%dx%d_L%d_U%d_Mu0_T*.HSF.stream | awk '{print $9}' | sed -e s/N%dx%dx%d_L%d_U%d_Mu0_T//g -e s/.HSF.stream//g > dtau1.dat" %(n_x,n_x,n_x,L,U1,n_x,n_x,n_x,L,U1))
+    dtau1 = np.genfromtxt("dtau1.dat")
+    # Get temperature and save them to a file.
+    os.system("ls -l N%dx%dx%d_L%d_U%d_Mu0_T*.HSF.stream | awk '{print $9}' | sed -e s/N%dx%dx%d_L%d_U%d_Mu0_T//g -e s/.HSF.stream//g > dtau2.dat" %(n_x,n_x,n_x,L,U2,n_x,n_x,n_x,L,U2))
+    dtau2 = np.genfromtxt("dtau2.dat")
+    dtau = np.hstack((dtau1,dtau2))
+    os.remove("dtau1.dat")
+    os.remove("dtau2.dat")
+
   # Array of shuffled file's file number 
   filenumber = np.arange(1,len(dtau)+1,1)
   if len(filenumber) > Max_nfile :
     filenumber = filenumber[:Max_nfile]
+  if not(use_single_U) and np.mod(len(filenumber),2) == 1:
+    print 'Attention! When using data set with two Us for training, make sure that there are EVEN number of files. Exiting...'
+    sys.exit()
+
   # Provide file information to the data_reader module.
   HSF = data_reader.insert_file_info(filename,filenumber, load_test_data_only=load_test_data_only)
   # Load and catogorize data into either training data, test data, validation data, or 
@@ -202,11 +219,12 @@ if perform_classification_with_label == True and perform_classification == True 
   # in the insert_file_info() module above.
   HSF = HSF.categorize_data()
 
-elif perform_classification_with_label == False and perform_classification == True :
+elif perform_classification_with_label == False :
   # Get temperature and save them to a file.
   os.system("ls -l N%dx%dx%d_L%d_U%d_Mu0_T*.HSF.stream | awk '{print $9}' | sed -e s/N%dx%dx%d_L%d_U%d_Mu0_T//g -e s/.HSF.stream//g > dtau.dat" %(n_x,n_x,n_x,L,U,n_x,n_x,n_x,L,U))
   # Load temperature into a list of string
   dtau = np.genfromtxt("dtau.dat",dtype='str')
+  os.remove("dtau.dat")
   # The number of lines to skip at the beginning of the file if not all of the data is
   # to be loaded.
   sh = ndata_per_temp  - classification_data_per_temp
@@ -223,36 +241,11 @@ elif perform_classification_with_label == False and perform_classification == Tr
   HSF = HSF.load_classification_data(nrows=ndata_per_temp, ncols=n_x*n_x*n_x*L, 
         SkipHeader=sh, load_ndata_per_file=classification_data_per_temp)
 
-# For training data with two different Us
-if perform_classification == False :
-  # Get file numbers.
-  if U1 < U2 :
-    os.system("ls -l N%dx%dx%d_L%d_U%d+U%d_Mu0_T_shuffled_*.dat | awk '{print $9}' | sed -e s/N%dx%dx%d_L%d_U%d+U%d_Mu0_T_shuffled_//g -e s/.dat//g > filenumber.dat" %(n_x,n_x,n_x,L,U1,U2,n_x,n_x,n_x,L,U1,U2))
-  else :
-    os.system("ls -l N%dx%dx%d_L%d_U%d+U%d_Mu0_T_shuffled_*.dat | awk '{print $9}' | sed -e s/N%dx%dx%d_L%d_U%d+U%d_Mu0_T_shuffled_//g -e s/.dat//g > filenumber.dat" %(n_x,n_x,n_x,L,U2,U1,n_x,n_x,n_x,L,U2,U1))
-
-  # Array of shuffled file's file number 
-  filenumber = np.genfromtxt("filenumber.dat")
-  if len(filenumber) > Max_nfile :
-    filenumber = filenumber[:Max_nfile]
-  if np.mod(len(filenumber),2) == 1:
-    print 'Attention! When using data set with two Us for training, make sure that there are EVEN number of files. Exiting...'
-    sys.exit() 
-  os.remove("filenumber.dat")
-  # Array of shuffled file's file number 
-  #filenumber = np.arange(1,len(dtau)+1,1)
-  # Provide file information to the data_reader module.
-  HSF = data_reader.insert_file_info(filename,filenumber)
-  # Load and catogorize data into either training data, test data, validation data, or 
-  # all of them. If validation data is needed, set include_validation_data to (T)
-  # in the insert_file_info() module above.
-  HSF = HSF.categorize_data()
 
 
 
 
-
-if train_neural_network == T or not(load_test_data_only) :
+if train_neural_network or not(load_test_data_only) :
   n_train_data = len(HSF.train.labels)
 
   while np.modf(float(n_train_data)/batch_size)[0] > 0.0 :
@@ -568,72 +561,71 @@ else :
   # To proceed, load the trained model.
   saver.restore(sess, filename_trained_model)
 
-if perform_classification :
-  print 'Performing classification using %s.' % filename_trained_model.replace('./','')
+print 'Performing classification using %s.' % filename_trained_model.replace('./','')
 
-  # Classification with labels ---------------------------------------------------------
+# Classification with labels ---------------------------------------------------------
 
-  if perform_classification_with_label == True :
+if perform_classification_with_label :
 
-    # First column : Temperature
-    # Second column: Average classified output of the second neuron
-    # Third column : Average classified output of the first neuron
-    # Fourth column: Classification accuracy
-    # Fifth column : Number of data used
-    Table = np.zeros(( len(dtau), 5))
-    Table[:,0] = dtau
+  # First column : Temperature
+  # Second column: Average classified output of the second neuron
+  # Third column : Average classified output of the first neuron
+  # Fourth column: Classification accuracy
+  # Fifth column : Number of data used
+  Table = np.zeros(( len(dtau), 5))
+  Table[:,0] = dtau
 
-    for i in range(len(HSF.test.temps)) :
-      # Output of neural net vs temperature
-      Table[HSF.test.temps[i],1] += np.argmax(y_conv.eval(feed_dict={x: HSF.test.images[i,:].reshape(1,V4d), keep_prob: 1.0}))
+  for i in range(len(HSF.test.temps)) :
+    # Output of neural net vs temperature
+    Table[HSF.test.temps[i],1] += np.argmax(y_conv.eval(feed_dict={x: HSF.test.images[i,:].reshape(1,V4d), keep_prob: 1.0}))
       # Accuracy vs temperature
-      Table[HSF.test.temps[i],3] += accuracy.eval(feed_dict={x: HSF.test.images[i,:].reshape(1,V4d), y_: HSF.test.labels[i,:].reshape(1,n_output_neuron), keep_prob: 1.0})
-      Table[HSF.test.temps[i],-1] += 1
+    Table[HSF.test.temps[i],3] += accuracy.eval(feed_dict={x: HSF.test.images[i,:].reshape(1,V4d), y_: HSF.test.labels[i,:].reshape(1,n_output_neuron), keep_prob: 1.0})
+    Table[HSF.test.temps[i],-1] += 1
 
-      #data = HSF.test.images[i,:]
-      #layer1 = h_conv1.eval(feed_dict={x: HSF.test.images[i,:].reshape(1,V4d)})
-      #layer1 = layer1.reshape(1,64*27)
-      #layer2 = h_fc1.eval(feed_dict={x: HSF.test.images[i,:].reshape(1,V4d)}) 
-      #output = y_conv.eval(feed_dict={x: HSF.test.images[i,:].reshape(1,V4d), keep_prob: 1.0})
-      #np.savetxt("input_layer.dat", data, fmt='%d')
-      #np.savetxt("feature_extraction_layer.dat", layer1)
-      #np.savetxt("fully_connected_layer1.dat", layer2)
-      #np.savetxt("output.dat", output)
-      #sys.exit()
+    #data = HSF.test.images[i,:]
+    #layer1 = h_conv1.eval(feed_dict={x: HSF.test.images[i,:].reshape(1,V4d)})
+    #layer1 = layer1.reshape(1,64*27)
+    #layer2 = h_fc1.eval(feed_dict={x: HSF.test.images[i,:].reshape(1,V4d)}) 
+    #output = y_conv.eval(feed_dict={x: HSF.test.images[i,:].reshape(1,V4d), keep_prob: 1.0})
+    #np.savetxt("input_layer.dat", data, fmt='%d')
+    #np.savetxt("feature_extraction_layer.dat", layer1)
+    #np.savetxt("fully_connected_layer1.dat", layer2)
+    #np.savetxt("output.dat", output)
+    #sys.exit()
 
-    # Normalize the output of the second neuron
-    Table[:,1] = Table[:,1]/Table[:,-1].astype('float')
-    # Normalized output of the first neuron
-    Table[:,2] = 1.0-Table[:,1]
-    # Normalize the classification accuracy
-    Table[:,3] = Table[:,3]/Table[:,-1].astype('float')
+  # Normalize the output of the second neuron
+  Table[:,1] = Table[:,1]/Table[:,-1].astype('float')
+  # Normalized output of the first neuron
+  Table[:,2] = 1.0-Table[:,1]
+  # Normalize the classification accuracy
+  Table[:,3] = Table[:,3]/Table[:,-1].astype('float')
 
-    np.savetxt(filename_result, Table)
-    print 'Result saved as %s.' % filename_result
+  np.savetxt(filename_result, Table)
+  print 'Result saved as %s.' % filename_result
 
-  # Classification on raw data --------------------------------------------------------
+# Classification on raw data --------------------------------------------------------
 
-  else :
+else :
 
-    # First column : Temperature
-    # Second column: Average classified output of the second neuron
-    # Third column : Average classified output of the first neuron
-    # Fourth column: Number of data used 
-    Table = np.zeros(( len(dtau), 4))
-    Table[:,0] = dtau
-    Table[:,-1] = classification_data_per_temp
+  # First column : Temperature
+  # Second column: Average classified output of the second neuron
+  # Third column : Average classified output of the first neuron
+  # Fourth column: Number of data used 
+  Table = np.zeros(( len(dtau), 4))
+  Table[:,0] = dtau
+  Table[:,-1] = classification_data_per_temp
 
-    n=0 
-    for j in range(len(dtau)) :
-      for i in range(classification_data_per_temp) :
-        # Output of neural net vs temperature
-        Table[j,1] += np.argmax(y_conv.eval(feed_dict={x: HSF.classification.images[n,:].reshape(1,V4d), keep_prob: 1.0}))
-        n+=1
+  n=0 
+  for j in range(len(dtau)) :
+    for i in range(classification_data_per_temp) :
+      # Output of neural net vs temperature
+      Table[j,1] += np.argmax(y_conv.eval(feed_dict={x: HSF.classification.images[n,:].reshape(1,V4d), keep_prob: 1.0}))
+      n+=1
 
-    # Normalize the output of the second neuron
-    Table[:,1] = Table[:,1]/Table[:,-1].astype('float')
-    # Normalized output of the first neuron
-    Table[:,2] = 1.0-Table[:,1]
+  # Normalize the output of the second neuron
+  Table[:,1] = Table[:,1]/Table[:,-1].astype('float')
+  # Normalized output of the first neuron
+  Table[:,2] = 1.0-Table[:,1]
 
-    np.savetxt(filename_classified, Table)
-    print 'Classified result saved as %s.' % filename_classified
+  np.savetxt(filename_classified, Table)
+  print 'Classified result saved as %s.' % filename_classified
