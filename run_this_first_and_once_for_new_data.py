@@ -6,7 +6,7 @@ import sys
 
 # If you are in the directory where the data file are located, make sure to modify the number formatting accordingly. Here it is %.3f. If not, give the full file path and modify the number formatting accordingly. Make sure the data file have consisten number formatting, i.e. 3 decimal places.
 
-use_single_U = True
+use_single_U = T
 if use_single_U :
     # Potential energy
     U1 = 9
@@ -47,7 +47,6 @@ for i in range(len(dtau)):
 os.system("ls -l N%dx%dx%d_L%d_U%d_Mu0_T*.HSF.stream | awk '{print $9}' | sed -e s/N%dx%dx%d_L%d_U%d_Mu0_T//g -e s/.HSF.stream//g > dtau.dat" % (n_x,n_x,n_x,L,U1,n_x,n_x,n_x,L,U1))
 
 dtau = np.genfromtxt("dtau.dat")
-os.remove("dtau.dat")
 
 # Initilize the python module by giving it the file information
 initialize = randomize_file_data.insert_file_info( filename, dtau, boundary = Tc1 )
