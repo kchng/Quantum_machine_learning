@@ -144,13 +144,13 @@ class insert_file_info :
                 shuffled_data[i*self.nrows+m:(i+1)*self.nrows+m,:self.ncols] = np.genfromtxt( 
                         self.full_file_path % self.filenumber_above[i], dtype = int, 
                         delimiter=self.delimiter, skip_header=0, skip_footer=0)
-                shuffled_data[i*self.nrows+m:(i+1)*self.nrows+m,-1:] = i+n+nfile_below+temp_index_offset
+                shuffled_data[i*self.nrows+m:(i+1)*self.nrows+m,-1:] = i+n+nfile_below+self.temp_index_offset
             print '\nShuffling data...\n'
             shuffled_indices = shuffle_normal( np.arange(0,Labelling_cutoff,1), self.nfile, ndata_below )
             if self.boundary_file_exist == True :
                 # Add half of the data from the boundary data file
                 shuffled_data[:nrows_half,:self.ncols] = boundary_data[nrows_half:,:]
-                shuffled_data[:nrows_half,-1:] = nfile_below+temp_index_offset
+                shuffled_data[:nrows_half,-1:] = nfile_below+self.temp_index_offset
             shuffled_data = shuffled_data[shuffled_indices]
             shuffled_data[:,-2:-1] = 1
 
