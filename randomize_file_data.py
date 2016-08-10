@@ -8,21 +8,22 @@ import scipy.stats
 
 class insert_file_info :
     
-    def __init__(self, full_file_path, filenumber, boundary, nrows = 1000,
-        ncols = 12800, use_random_seed = True ) :
+    def __init__(self, full_file_path, filenumber, boundary, temp_index_offset = 0,
+        nrows = 1000, ncols = 12800, use_random_seed = True ) :
         """ filenumber : An array of file number """
-        self.filename         = full_file_path.rsplit('\\', 1)[-1]
-        self.filename         = self.filename.rsplit('/', 1)[-1]
-        self.newfilename      = string.replace(self.filename, '%.3f.HSF.stream', '_shuffled_%.2d.dat')
-        self.boundary         = boundary
-        self.full_file_path   = full_file_path
-        self.filenumber       = filenumber
-        self.filenumber_below = filenumber[filenumber<self.boundary]
-        self.filenumber_above = filenumber[filenumber>self.boundary]
-        self.nfile            = len(filenumber)
-        self.nrows            = nrows
-        self.ncols            = ncols
-        self.delimiter        = [1 for i in xrange(self.ncols)]
+        self.filename          = full_file_path.rsplit('\\', 1)[-1]
+        self.filename          = self.filename.rsplit('/', 1)[-1]
+        self.newfilename       = string.replace(self.filename, '%.3f.HSF.stream', '_shuffled_%.2d.dat')
+        self.boundary          = boundary
+        self.full_file_path    = full_file_path
+        self.filenumber        = filenumber
+        self.filenumber_below  = filenumber[filenumber<self.boundary]
+        self.filenumber_above  = filenumber[filenumber>self.boundary]
+        self.nfile             = len(filenumber)
+        self.nrows             = nrows
+        self.ncols             = ncols
+        self.delimiter         = [1 for i in xrange(self.ncols)]
+        self.temp_index_offset = temp_index_offset
  
         if not(use_random_seed) :
             print 'Using fixed seed.'
@@ -105,11 +106,11 @@ class insert_file_info :
                 shuffled_data[i*self.nrows:(i+1)*self.nrows,:self.ncols] = np.genfromtxt( 
                         self.full_file_path % self.filenumber_below[i], dtype = int, 
                         delimiter=self.delimiter, skip_header=0, skip_footer=0)
-                shuffled_data[i*self.nrows:(i+1)*self.nrows,-1:] = i
+                shuffled_data[i*self.nrows:(i+1)*self.nrows,-1:] = i + self.temp_index_offset
             if self.boundary_file_exist == True :
                 # Add half of the data from the boundary data file.
                 shuffled_data[(i+1)*self.nrows:,:self.ncols] = boundary_data[:nrows_half,:]
-                shuffled_data[(i+1)*self.nrows:,-1:] = i+1
+                shuffled_data[(i+1)*self.nrows:,-1:] = i+1+self.temp_index_offset
             print '\nShuffling data...\n'
             shuffled_indices = shuffle_normal( np.arange(0,Labelling_cutoff,1), self.nfile, ndata_below )
             shuffled_data = shuffled_data[shuffled_indices]
@@ -143,13 +144,13 @@ class insert_file_info :
                 shuffled_data[i*self.nrows+m:(i+1)*self.nrows+m,:self.ncols] = np.genfromtxt( 
                         self.full_file_path % self.filenumber_above[i], dtype = int, 
                         delimiter=self.delimiter, skip_header=0, skip_footer=0)
-                shuffled_data[i*self.nrows+m:(i+1)*self.nrows+m,-1:] = i+n+nfile_below
+                shuffled_data[i*self.nrows+m:(i+1)*self.nrows+m,-1:] = i+n+nfile_below+temp_index_offset
             print '\nShuffling data...\n'
             shuffled_indices = shuffle_normal( np.arange(0,Labelling_cutoff,1), self.nfile, ndata_below )
             if self.boundary_file_exist == True :
                 # Add half of the data from the boundary data file
                 shuffled_data[:nrows_half,:self.ncols] = boundary_data[nrows_half:,:]
-                shuffled_data[:nrows_half,-1:] = nfile_below
+                shuffled_data[:nrows_half,-1:] = nfile_below+temp_index_offset
             shuffled_data = shuffled_data[shuffled_indices]
             shuffled_data[:,-2:-1] = 1
 
@@ -198,7 +199,7 @@ class insert_file_info :
                         shuffled_indices = shuffle_normal( np.arange(0,self.nrows,1), 2, self.nrows/2 )
                         boundary_data = shuffled_data[i*self.nrows:(i+1)*self.nrows,:self.ncols]
                         shuffled_data[i*self.nrows:(i+1)*self.nrows,:self.ncols] = boundary_data[shuffled_indices]
-                    shuffled_data[i*self.nrows:(i+1)*self.nrows,-1:] = i
+                    shuffled_data[i*self.nrows:(i+1)*self.nrows,-1:] = i + self.temp_index_offset
                 n, m = 1, nrows_half
 
             else :
@@ -208,7 +209,7 @@ class insert_file_info :
                     shuffled_data[i*self.nrows:(i+1)*self.nrows,:self.ncols] = np.genfromtxt( 
                         self.full_file_path % self.filenumber[i], dtype = int, 
                         delimiter=self.delimiter, skip_header=0, skip_footer=0)
-                    shuffled_data[i*self.nrows:(i+1)*self.nrows,-1:] = i
+                    shuffled_data[i*self.nrows:(i+1)*self.nrows,-1:] = i + self.temp_index_offset
                 n, m = 0, 0
  
             print '\nLabelling data...\n'
