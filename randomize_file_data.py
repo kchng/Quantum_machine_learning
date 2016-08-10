@@ -98,7 +98,7 @@ class insert_file_info :
                 nlabelling_cutoff = nfile_below 
             # The second to last column is the label and the last column holds the information for temperature.
             shuffled_data = np.zeros((Labelling_cutoff, self.ncols+2))
- 
+
             start_time = time.time()
             for i in range(nfile_below) :
                 print '%.1f' % (time.time()-start_time),'s. Opening', self.filename % self.filenumber_below[i], '...'
@@ -154,8 +154,11 @@ class insert_file_info :
             shuffled_data[:,-2:-1] = 1
 
             print 'Checking data...\n'
-            frequency = np.zeros(self.nfile) 
-            frequency[nlabelling_cutoff-1:] = scipy.stats.itemfreq(shuffled_data[:,-1:])[:,1]
+            frequency = np.zeros(self.nfile)
+            if self.boundary_file_exist == True : 
+                frequency[nlabelling_cutoff-1:] = scipy.stats.itemfreq(shuffled_data[:,-1:])[:,1]
+            else :
+                frequency[nlabelling_cutoff:] = scipy.stats.itemfreq(shuffled_data[:,-1:])[:,1]
             frequency += frequency_tmp
             frequency_checker = np.zeros(self.nfile)
             frequency_checker += self.nrows
