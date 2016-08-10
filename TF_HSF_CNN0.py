@@ -41,6 +41,8 @@ overtraining_threshold = 10
 # Initialize best test accuracy. The minimum test_accuracy for model and measurements
 # to be saved.
 best_test_accuracy = 0.5
+# Maximum number of data file to be used for training and testing.
+Max_nfile = 40
 
 # Classification can be performed on labelled or raw data. Set
 # perform_classification_with_label to (F) to perform classification on labelled
@@ -191,6 +193,8 @@ if perform_classification_with_label == True and perform_classification == True 
   os.remove("dtau.dat")
   # Array of shuffled file's file number 
   filenumber = np.arange(1,len(dtau)+1,1)
+  if len(filenumber) > Max_nfile :
+    filenumber = filenumber[:Max_nfile]
   # Provide file information to the data_reader module.
   HSF = data_reader.insert_file_info(filename,filenumber, load_test_data_only=load_test_data_only)
   # Load and catogorize data into either training data, test data, validation data, or 
@@ -229,7 +233,8 @@ if perform_classification == False :
 
   # Array of shuffled file's file number 
   filenumber = np.genfromtxt("filenumber.dat")
-  filenumber = filenumber[:40]
+  if len(filenumber) > Max_nfile :
+    filenumber = filenumber[:Max_nfile]
   if np.mod(len(filenumber),2) == 1:
     print 'Attention! When using data set with two Us for training, make sure that there are EVEN number of files. Exiting...'
     sys.exit() 
