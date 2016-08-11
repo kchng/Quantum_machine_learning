@@ -43,6 +43,8 @@ overtraining_threshold = 10
 best_test_accuracy = 0.5
 # Maximum number of data file to be used for training and testing.
 Max_nfile = 40
+# Offset to the file index (to load)
+File_index_offset = 0
 
 # Classification can be performed on labelled or raw data. Set
 # perform_classification_with_label to (F) to perform classification on labelled
@@ -100,33 +102,33 @@ else :
         filename = './N%dx%dx%d_L%d_U%d+U%d_Mu0_T_shuffled' % (n_x,n_x,n_x,L,U2,U1) + '_%.2d.dat'
 
 # Trained model
-filename_trained_model = "./20160810-0342_model.ckpt" 
+filename_trained_model = "./20160811-1127_model_CNN0.ckpt" 
 
 name_output_file_by_date_first = T
 if name_output_file_by_date_first == False : 
     # Output model filename
-    filename_weight_bias   = "./model_" + start_date_time + ".ckpt"
+    filename_weight_bias   = "./model_CNN0_" + start_date_time + ".ckpt"
 
     # Output of training measurements filename
-    filename_measure       = "./measurements_" + start_date_time + ".dat"
+    filename_measure       = "./measurements_CNN0_" + start_date_time + ".dat"
 
     # Output of classification result with labels
-    filename_result        = "./result_" + start_date_time + ".dat"
+    filename_result        = "./result_CNN0_" + start_date_time + ".dat"
 
     # Output of classification result from raw data (without labels)
-    filename_classified    = "./classified_" + start_date_time + ".dat"
+    filename_classified    = "./classified_CNN0_" + start_date_time + ".dat"
 else :
     # Output model filename
-    filename_weight_bias   = "./" + start_date_time + "_model.ckpt"
+    filename_weight_bias   = "./" + start_date_time + "_model_CNN0.ckpt"
 
     # Output of training measurements filename
-    filename_measure       = "./" + start_date_time + "_measurements.dat"
+    filename_measure       = "./" + start_date_time + "_measurements_CNN0.dat"
 
     # Output of classification result with labels
-    filename_result        = "./" + start_date_time + "_result.dat"
+    filename_result        = "./" + start_date_time + "_result_CNN0.dat"
 
     # Output of classification result from raw data (without labels)
-    filename_classified    = "./" + start_date_time + "_classified.dat"
+    filename_classified    = "./" + start_date_time + "_classified_CNN0.dat"
 
 # Neural network architecture settings -----------------------------------------------
 
@@ -205,7 +207,7 @@ if perform_classification_with_label :
     os.remove("dtau2.dat")
 
   # Array of shuffled file's file number 
-  filenumber = np.arange(1,len(dtau)+1,1)
+  filenumber = np.arange(1+File_index_offset,len(dtau)+1+File_index_offset,1)
   if len(filenumber) > Max_nfile :
     filenumber = filenumber[:Max_nfile]
   if not(use_single_U) and np.mod(len(filenumber),2) == 1:
@@ -530,8 +532,10 @@ if train_neural_network :
         save_path = saver.save(sess, filename_weight_bias)
         check_model = tf.reduce_mean(W_conv1).eval()
         best_epoch = ndata_collect*fractional_epoch
-
     print '%.2fs, epoch %.2f, training accuracy %g, test accuracy %g, cost %g' % (time.time()-start_time,(n+1)*fractional_epoch, train_accuracy, test_accuracy, Cost)
+  else :
+    print 'Saving measurements %s.' % filename_measure.replace('./','')
+    np.savetxt(filename_measure, Table_measure[:n+1,:])
 
   if best_epoch == 0 :
     print 'Training model is not saved as saving criteria are not met.'
