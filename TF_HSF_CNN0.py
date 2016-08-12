@@ -25,7 +25,7 @@ T, F = True, False
 # data by setting train_neural_network to (F) and perform_classification_with_label
 # to (F).
 train_neural_network = T
-continue_training_using_trained_model = T
+continue_training_using_trained_model = F
 
 # Select (T) to use one U for training or (F) to use data set with 2 U for training.
 use_single_U = False
@@ -53,11 +53,14 @@ File_index_offset = 0
 # clasification will be done on labelled data.
 perform_classification_with_label = T
 
+if not(perform_classification_with_label) :
+    use_single_U = True
+
 # System and file information --------------------------------------------------------
 
 if use_single_U :
     # Potential energy
-    U = 9
+    U = 5
 else :
     # Potential energy 1 
     U1 = 4
@@ -79,7 +82,7 @@ V4d = L*(n_x)**3
 ndata_per_temp = 1000
 
 # Number of classification data (raw unlabelled data) to be used for classification. 
-classification_data_per_temp = 250
+classification_data_per_temp = 500
 
 # String of current date and time
 dt = datetime.datetime.now()
@@ -102,7 +105,7 @@ else :
         filename = './N%dx%dx%d_L%d_U%d+U%d_Mu0_T_shuffled' % (n_x,n_x,n_x,L,U2,U1) + '_%.2d.dat'
 
 # Trained model
-filename_trained_model = "./20160811-1127_model_CNN0.ckpt" 
+filename_trained_model = "./20160811-1947_model_CNN0.ckpt" 
 
 name_output_file_by_date_first = T
 if name_output_file_by_date_first == False : 
@@ -538,13 +541,17 @@ if train_neural_network :
     np.savetxt(filename_measure, Table_measure[:n+1,:])
 
   if best_epoch == 0 :
-    print 'Training model is not saved as saving criteria are not met.'
+    print 'Training model is not saved as saving criteria are not met. Classification will not be performed.'
+    saver.restore(sess, filename_trained_model)
+    model_saving_criteria_not_met = True 
   else :
     print 'Best training epoch: %g' % best_epoch
     print 'Model saved in file: ', save_path
 
-    # To proceed, load the best (saved) model instead of the last training model.
-    saver.restore(sess, filename_weight_bias)
+    # To proceed, load the best (saved) model instead of the last training model.i
+    filename_trained_model = filename_weight_bias
+    saver.restore(sess, filename_trained_model)
+    model_saving_criteria_not_met = False
 
     # Check if the saved model and the restored model are the same.
     if check_model != tf.reduce_mean(W_conv1).eval() :
@@ -564,12 +571,13 @@ else :
   saver = tf.train.Saver([W_conv1, b_conv1, W_fc1, b_fc1, W_fc2, b_fc2])
   # To proceed, load the trained model.
   saver.restore(sess, filename_trained_model)
+  model_saving_criteria_not_met = False
 
 print 'Performing classification using %s.' % filename_trained_model.replace('./','')
 
 # Classification with labels ---------------------------------------------------------
 
-if perform_classification_with_label :
+if perform_classification_with_label and not(model_saving_criteria_not_met) :
 
   # First column : Temperature
   # Second column: Average classified output of the second neuron
@@ -609,7 +617,7 @@ if perform_classification_with_label :
 
 # Classification on raw data --------------------------------------------------------
 
-else :
+elif not(model_saving_criteria_not_met) :
 
   # First column : Temperature
   # Second column: Average classified output of the second neuron
