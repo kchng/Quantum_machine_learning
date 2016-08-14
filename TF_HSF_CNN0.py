@@ -24,7 +24,7 @@ T, F = True, False
 # (T) or it can also be used for performing classification using raw unlabelled
 # data by setting train_neural_network to (F) and perform_classification_with_label
 # to (F).
-train_neural_network = T
+train_neural_network = F
 continue_training_using_trained_model = F
 
 # Select (T) to use one U for training or (F) to use data set with 2 U for training.
@@ -51,7 +51,7 @@ File_index_offset = 0
 # data or (T) to perform classification on raw data. When train_neural_network is
 # set to (T), perform_classification_with_label is set to (T) automatically and
 # clasification will be done on labelled data.
-perform_classification_with_label = T
+perform_classification_with_label = F
 
 if not(perform_classification_with_label) :
     use_single_U = True
@@ -60,7 +60,7 @@ if not(perform_classification_with_label) :
 
 if use_single_U :
     # Potential energy
-    U = 5
+    U = 16
 else :
     # Potential energy 1 
     U1 = 4
@@ -105,7 +105,7 @@ else :
         filename = './N%dx%dx%d_L%d_U%d+U%d_Mu0_T_shuffled' % (n_x,n_x,n_x,L,U2,U1) + '_%.2d.dat'
 
 # Trained model
-filename_trained_model = "./20160811-1947_model_CNN0.ckpt" 
+filename_trained_model = "./20160811-1945_model_CNN0.ckpt" 
 
 name_output_file_by_date_first = T
 if name_output_file_by_date_first == False : 
@@ -210,12 +210,12 @@ if perform_classification_with_label :
     os.remove("dtau2.dat")
 
   # Array of shuffled file's file number 
-  filenumber = np.arange(1+File_index_offset,len(dtau)+1+File_index_offset,1)
+  filenumber = np.arange(1+File_index_offset,len(dtau)+File_index_offset,1)
   if len(filenumber) > Max_nfile :
     filenumber = filenumber[:Max_nfile]
-  if not(use_single_U) and np.mod(len(filenumber),2) == 1:
-    print 'Attention! When using data set with two Us for training, make sure that there are EVEN number of files. Exiting...'
-    sys.exit()
+  #if not(use_single_U) and np.mod(len(filenumber),2) == 1:
+  #  print 'Attention! When using data set with two Us for training, make sure that there are EVEN number of files. Exiting...'
+  #  sys.exit()
 
   # Provide file information to the data_reader module.
   HSF = data_reader.insert_file_info(filename,filenumber, load_test_data_only=load_test_data_only)
