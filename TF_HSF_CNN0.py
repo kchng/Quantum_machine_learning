@@ -107,59 +107,63 @@ else :
 # Trained model
 filename_trained_model = "./20160814-0844_model_U5_CNN0e.ckpt" 
 
+data_used_for_training = filename_trained_model.rsplit('_',2)[1]
+
+# Code name of the neural network
+NNetwork = 'CNN0'
+
 name_output_file_by_date_first = T
-if name_output_file_by_date_first == False : 
+if name_output_file_by_date_first == False :
     if use_single_U :
         # Output model filename
-        filename_weight_bias   = "./model_U%d_CNN0_" % U + start_date_time + ".ckpt"
+        filename_weight_bias   = "./model_U%d_" + NNetwork + "_" % U + start_date_time + ".ckpt"
 
         # Output of training measurements filename
-        filename_measure       = "./measurements_U%d_CNN0_" % U + start_date_time + ".dat"
+        filename_measure       = "./measurements_U%d_" NNetwork + "_" % U + start_date_time + ".dat"
 
         # Output of classification result with labels
-        filename_result        = "./result_U%d_CNN0_" % U + start_date_time + ".dat"
+        filename_result        = "./result_U%d_" + NNetwork + "_" % U + start_date_time + ".dat"
 
         # Output of classification result from raw data (without labels)
-        filename_classified    = "./classified_U%d_CNN0_" % U + start_date_time + ".dat"
+        filename_classified    = "./classified_U%d_" + NNetwork + "_" % U + 'using_' data_used_for_training + '_' + start_date_time + ".dat"
     else :
         # Output model filename
-        filename_weight_bias   = "./model_U%d+U%d_CNN0_" % (U1,U2) + start_date_time + ".ckpt"
+        filename_weight_bias   = "./model_U%d+U%d_" + NNetwork + "_" % (U1,U2) + start_date_time + ".ckpt"
 
         # Output of training measurements filename
-        filename_measure       = "./measurements_U%d+U%d_CNN0_" % (U1,U2) + start_date_time + ".dat"
+        filename_measure       = "./measurements_U%d+U%d_" + NNetwork + "_" % (U1,U2) + start_date_time + ".dat"
 
         # Output of classification result with labels
-        filename_result        = "./result_U%d+U%d_CNN0_" % (U1,U2) + start_date_time + ".dat"
+        filename_result        = "./result_U%d+U%d_" + NNetwork + "_" % (U1,U2) + start_date_time + ".dat"
 
         # Output of classification result from raw data (without labels)
-        filename_classified    = "./classified_U%d+U%d_CNN0_" % (U1,U2) + start_date_time + ".dat"
+        filename_classified    = "./classified_U%d+U%d_" + NNetwork + "_" % (U1,U2) + 'using_' data_used_for_training + '_' + start_date_time + ".dat"
 
 else :
     if use_single_U :
         # Output model filename
-        filename_weight_bias   = "./" + start_date_time + "_model_U%d_CNN0.ckpt" % U
+        filename_weight_bias   = "./" + start_date_time + "_model_U%d_" + NNetwork + ".ckpt" % U
 
         # Output of training measurements filename
-        filename_measure       = "./" + start_date_time + "_measurements_U%d_CNN0.dat" % U
+        filename_measure       = "./" + start_date_time + "_measurements_U%d_" + NNetwork + ".dat" % U
 
         # Output of classification result with labels
-        filename_result        = "./" + start_date_time + "_result_U%d_CNN0.dat" % U
+        filename_result        = "./" + start_date_time + "_result_U%d_" + NNetwork + ".dat" % U
 
         # Output of classification result from raw data (without labels)
-        filename_classified    = "./" + start_date_time + "_classified_U%d_CNN0.dat" % U
+        filename_classified    = "./" + start_date_time + "_classified_U%d_" + NNetwork + "_" % U + 'using_' data_used_for_training + ".dat"
     else :
         # Output model filename
-        filename_weight_bias   = "./" + start_date_time + "_model_U%d+U%d_CNN0.ckpt" % (U1,U2)
+        filename_weight_bias   = "./" + start_date_time + "_model_U%d+U%d_" + NNetwork + ".ckpt" % (U1,U2)
 
         # Output of training measurements filename
-        filename_measure       = "./" + start_date_time + "_measurements_U%d+U%d_CNN0.dat" % (U1,U2)
+        filename_measure       = "./" + start_date_time + "_measurements_U%d+U%d_" + NNetwork + ".dat" % (U1,U2)
 
         # Output of classification result with labels
-        filename_result        = "./" + start_date_time + "_result_U%d+U%d_CNN0.dat" % (U1,U2)
+        filename_result        = "./" + start_date_time + "_result_U%d+U%d_" + NNetwork ".dat" % (U1,U2)
 
         # Output of classification result from raw data (without labels)
-        filename_classified    = "./" + start_date_time + "_classified_U%d+U%d_CNN0.dat" % (U1,U2)
-
+        filename_classified    = "./" + start_date_time + "_classified_U%d+U%d_" + NNetwork "_" % (U1,U2) + 'using_' data_used_for_training + ".dat"
 
 # Neural network architecture settings -----------------------------------------------
 
