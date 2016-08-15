@@ -242,7 +242,7 @@ if perform_classification_with_label :
     os.remove("dtau2.dat")
 
   # Array of shuffled file's file number 
-  filenumber = np.arange(1+File_index_offset,len(dtau)+File_index_offset,1)
+  filenumber = np.arange(1+File_index_offset,len(dtau)+1,1)
   if len(filenumber) > Max_nfile :
     filenumber = filenumber[:Max_nfile]
   #if not(use_single_U) and np.mod(len(filenumber),2) == 1:
