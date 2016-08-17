@@ -6,16 +6,30 @@ import sys
 filename_measurements = '20160810-0955_measurements_CNN0a.dat'
 filename_result = '20160810-0955_result_CNN0a.dat'
 
-filename_measurements = '20160810-1104_measurements_CNN0a.dat'
-filename_result = '20160810-1104_result_CNN0a.dat'
+filename_measurements = '20160811-1459_measurements_CNN0a.dat'
+filename_result = '20160811-1459_result_CNN0a.dat'
+
+filename_measurements = '20160814-2317_measurements_U20_CNN0f.dat'
+filename_result = '20160815-1525_classified_U4_CNN0f_using_U5+U20.dat'
+filename_result = '20160815-1547_classified_U4_CNN0_using_U5+U20.dat'
+filename_result = '20160815-1538_classified_U4_CNN0_using_U5.dat'
+filename_result = '20160815-1548_classified_U4_CNN0f_using_U5.dat'
+
+plot_progress_output_and_accuracy = False
 
 #filename_measurements = '20160803-0833_measurements.dat'
 #filename_result = '20160803-0833_result.dat'
 
-title = '$\mathrm{Network:\ TF\_HSF\_CNN0a.py}$'
+#title = '$\mathrm{Network:\ TF\_HSF\_CNN0.py\ U5\ Test\ accuracy:\ 80.4}$'
+#title = '$\mathrm{Network:\ TF\_HSF\_CNN0.py\ U20\ Test\ accuracy:\ 98.3}$'
+#title = '$\mathrm{Network:\ TF\_HSF\_CNN0.py\ U5\ +\ U20\ Test\ accuracy:\ 83.9}$'
+
+title = '$\mathrm{Network:\ TF\_HSF\_CNN0f.py\ U5\ Test\ accuracy:\ 85.4}$'
+#title = '$\mathrm{Network:\ TF\_HSF\_CNN0f.py\ U20\ Test\ accuracy:\ 99.2}$'
+#title = '$\mathrm{Network:\ TF\_HSF\_CNN0f.py\ U5\ +\ U20\ Test\ accuracy:\ 87.7}$'
 
 # temperature_U1 index_U1 closest to T_c
-index_U1 = 9
+index_U1 = 25
 
 # Potential energy data set 1
 U1 = 4
@@ -24,7 +38,7 @@ U1 = 4
 T_c_U1= 0.16
 
 # Initial guess solution of critical temperature_U1
-T_c_guess_U1 = 0.105
+T_c_guess_U1 = 0.2
 
 # temperature_U2 index_U2 closest to T_c
 index_U2 = 20
@@ -38,10 +52,10 @@ T_c_U2= 0.19
 # Initial guess solution of critical temperature_U2
 T_c_guess_U2 = 0.19
 
-T_c_U1_known = False
+T_c_U1_known = True
 
-use_single_U = False
-U1_temp_len = 36
+use_single_U = True
+U1_temp_len = 48
 
 # 'equal' or 'log'
 grid = 'equal'
@@ -104,22 +118,27 @@ def newtons_method(f, g, x0, e = 10e-10):
         delta = dx(f, g, x0)
     return x0
 
-date = filename_measurements.rsplit('_',2)[0]
+#date = filename_result.rsplit('_',5)[0]
+date = filename_result.rsplit('.',5)[0]
 
-data_measurements = np.loadtxt(filename_measurements)
-
-training_epochs   = data_measurements[:,0]
-training_accuracy = data_measurements[:,1]
-test_accuracy     = data_measurements[:,2]
-cost              = data_measurements[:,3]
-
+if plot_progress_output_and_accuracy :
+    data_measurements = np.loadtxt(filename_measurements)
+    
+    training_epochs   = data_measurements[:,0]
+    training_accuracy = data_measurements[:,1]
+    test_accuracy     = data_measurements[:,2]
+    cost              = data_measurements[:,3]
+    
 data_result = np.loadtxt(filename_result)
 
 if use_single_U :
-    temperature_U1       = data_result[:,0]
-    output_neuron2_U1    = data_result[:,1]
-    output_neuron1_U1    = data_result[:,2]
-    accuracy_U1          = data_result[:,3]
+    temperature          = data_result[:,0]
+    sort_index = temperature.argsort()
+    temperature_U1       = temperature[sort_index]
+    output_neuron2_U1    = data_result[:,1][sort_index]
+    output_neuron1_U1    = data_result[:,2][sort_index]
+    if plot_progress_output_and_accuracy :
+        accuracy_U1          = data_result[:,3]
     
     if interpolation == 'linear' :
         
@@ -147,7 +166,7 @@ if use_single_U :
         T_c_experiment_x_U1 = newtons_method( linear1_U1, linear2_U1, T_c_guess_U1 )
         T_c_experiment_y_U1 = linear1_U1(T_c_experiment_x_U1)[0]
 
-    print 'T_c_U1          = %.2f' % T_c_U1
+    print 'T_c (U=%d)       = %.2f' % (U1, T_c_U1)
     print 'T_c, experiment = %.2f' % T_c_experiment_x_U1
     print 'Percent error   = %.2g %%' % (abs(1.-T_c_experiment_x_U1/T_c_U1)*100)
     
@@ -156,12 +175,14 @@ else :
     temperature_U1    = data_result[:,0][:U1_temp_len]
     output_neuron2_U1 = data_result[:,1][:U1_temp_len]
     output_neuron1_U1 = data_result[:,2][:U1_temp_len]
-    accuracy_U1       = data_result[:,3][:U1_temp_len]
+    if plot_progress_output_and_accuracy :
+        accuracy_U1       = data_result[:,3][:U1_temp_len]
 
     temperature_U2    = data_result[:,0][U1_temp_len:]
     output_neuron2_U2 = data_result[:,1][U1_temp_len:]
     output_neuron1_U2 = data_result[:,2][U1_temp_len:]
-    accuracy_U2       = data_result[:,3][U1_temp_len:]
+    if plot_progress_output_and_accuracy :
+        accuracy_U2       = data_result[:,3][U1_temp_len:]
     
     if interpolation == 'linear' :
         
@@ -221,215 +242,381 @@ Color    = [ [0.90, 0.25, 0.35], [0.95, 0.35, 0.00], [0.95, 0.55, 0.00],
              [0.20, 0.60, 0.95], [0.20, 0.40, 0.95], [0.40, 0.20, 0.95],
              [0.80, 0.20, 0.95], [0.10, 0.10, 0.10], [0.60, 0.60, 0.60]                  
            ]
-           
-fig = plt.figure( figsize = plt.figaspect( 1.33 ) *3.0 )
 
-ax11 = fig.add_subplot( 3, 1, 1 )
-
-#for i in range(len(epoch_at_which_model_saved)) :
-#    ax11.plot([epoch_at_which_model_saved[i],
-#    epoch_at_which_model_saved[i]],[0,1], ls='-.', 
-#    label = '', color=Color[2], lw=2, alpha=0.5)
-#ax11.plot([],[],ls='-.', 
-#  label = '$\mathrm{Epoch\ at\ which\ model\ saved}$', color=Color[2], lw=2, 
-#  alpha=0.5)
-
-ax11.plot(training_epochs, training_accuracy, ls='-', 
-  label = '$\mathrm{Training\ accuracy}$', color=Color[1], lw=2, alpha=1.0)
-ax11.plot(training_epochs, test_accuracy    , ls='-', 
-  label = '$\mathrm{Test\ accuracy}$', color=Color[9], lw=2, alpha=1.0)
-
-ax11.set_xlabel('$\mathrm{Training\ epoch}$', fontsize='25')
-ax11.set_ylabel('$\mathrm{Accuracy}$', fontsize='25')
-#plt.xlim([0.2,10])
-plt.ylim([0,1])
-
-ax12 = ax11.twinx()
-ax12.plot(training_epochs, cost, ls = '--', 
-  label = '$\mathrm{Cross-entropy\ cost}$', color=Color[-1], lw=2, alpha=0.5)
-
-ax12.set_ylabel('$\mathrm{Cost}$', fontsize='25')
-
-lines1, labels1 = ax11.get_legend_handles_labels()
-lines2, labels2 = ax12.get_legend_handles_labels()
-
-ax12.legend(lines1+lines2, labels1+labels2, loc='center right', fontsize='15')
- 
-ax11.grid(True)
-#plt.grid(True)   
-
-ax21 = fig.add_subplot( 3, 1, 2 )
-
-if use_single_U :
-
-    ax21.plot([T_c_U1, T_c_U1], [0,1], ls='--', 
-    label = '$T_{c} = %.2f$' % T_c_U1, color=Color[-1], lw=2, alpha=0.5)    
-            
-    ax21.plot(temperature_U1, output_neuron2_U1, color=Color[1], marker='o', 
-    linestyle='None', ms=5, markeredgewidth=0.0, alpha=1.0)
-    ax21.plot(temperature_U1, output_neuron1_U1, color=Color[9], marker='o', 
-    linestyle='None', ms=5, markeredgewidth=0.0, alpha=1.0)
-
-    if grid == 'equal' :
-        if interpolation == 'linear' :
-            ax21.plot(temperature_U1, output_neuron2_U1, color=Color[1],  
-            linestyle='-', lw=2, alpha=1.0)
-            ax21.plot(temperature_U1, output_neuron1_U1, color=Color[9],
-            linestyle='-', lw=2, alpha=1.0)
-        elif interpolation == 'cubic' :
-            ax21.plot(T_mod2_U1, Output_mod2_U1, 
-            ls='-', label='', color=Color[1], lw=2, alpha=1.0)               
-            ax21.plot(T_mod1_U1, Output_mod1_U1, 
-            ls='-', label='', color=Color[9], lw=2, alpha=1.0)     
-        ax21.plot(T_c_experiment_x_U1, T_c_experiment_y_U1, 
-        label='$T_{c,\ \mathrm{experiment}} = %.2f$' % T_c_experiment_x_U1, color=Color[-1], 
-        marker='o', linestyle='None', ms=10, markeredgewidth=0.0, alpha=0.5)
-        ax21.plot([],[], 
-        label='$\mathrm{Percent\ error} = %.2g %%$'%(abs(1.-T_c_experiment_x_U1/T_c_U1)*100),
-        linestyle='None')
-                                            
-    if grid == 'log' :
-        if interpolation == 'linear' :
-            ax21.semilogx(temperature_U1, output_neuron2_U1, color=Color[1],  
-            linestyle='-', lw=2, alpha=1.0)
-            ax21.semilogx(temperature_U1, output_neuron1_U1, color=Color[9],
-            linestyle='-', lw=2, alpha=1.0)
-        elif interpolation == 'cubic' :
-            ax21.semilogx(T_mod2_U1, Output_mod2_U1, 
-            ls='-', label='', color=Color[1], lw=2, alpha=1.0)               
-            ax21.semilogx(T_mod1_U1, Output_mod1_U1, 
-            ls='-', label='', color=Color[9], lw=2, alpha=1.0)                
-        ax21.semilogx(T_c_experiment_x_U1, T_c_experiment_y_U1, 
-        label='$T_{c,\ \mathrm{experiment}} = %.2f$' % T_c_experiment_x_U1, color=Color[-1], 
-        marker='o', linestyle='None', ms=10, markeredgewidth=0.0, alpha=0.5)
-        ax21.semilogx([],[], 
-        label='$\mathrm{Percent\ error} = %.2g %%$'%(abs(1.-T_c_experiment_x_U1/T_c_U1)*100),
-        linestyle='None')
+if plot_progress_output_and_accuracy :
+                    
+    fig = plt.figure( figsize = plt.figaspect( 1.33 ) *3.0 )
     
-else :
-
-    if T_c_U1_known :
+    ax11 = fig.add_subplot( 3, 1, 1 )
+    
+    #for i in range(len(epoch_at_which_model_saved)) :
+    #    ax11.plot([epoch_at_which_model_saved[i],
+    #    epoch_at_which_model_saved[i]],[0,1], ls='-.', 
+    #    label = '', color=Color[2], lw=2, alpha=0.5)
+    #ax11.plot([],[],ls='-.', 
+    #  label = '$\mathrm{Epoch\ at\ which\ model\ saved}$', color=Color[2], lw=2, 
+    #  alpha=0.5)
+    
+    ax11.plot(training_epochs, training_accuracy, ls='-', 
+    label = '$\mathrm{Training\ accuracy}$', color=Color[1], lw=2, alpha=1.0)
+    ax11.plot(training_epochs, test_accuracy    , ls='-', 
+    label = '$\mathrm{Test\ accuracy}$', color=Color[9], lw=2, alpha=1.0)
+    
+    ax11.set_xlabel('$\mathrm{Training\ epoch}$', fontsize='25')
+    ax11.set_ylabel('$\mathrm{Accuracy}$', fontsize='25')
+    #plt.xlim([0.2,10])
+    plt.ylim([0,1])
+    
+    ax12 = ax11.twinx()
+    ax12.plot(training_epochs, cost, ls = '--', 
+    label = '$\mathrm{Cross-entropy\ cost}$', color=Color[-1], lw=2, alpha=0.5)
+    
+    ax12.set_ylabel('$\mathrm{Cost}$', fontsize='25')
+    
+    lines1, labels1 = ax11.get_legend_handles_labels()
+    lines2, labels2 = ax12.get_legend_handles_labels()
+    
+    ax12.legend(lines1+lines2, labels1+labels2, loc='center right', fontsize='15')
+    
+    ax11.grid(True)
+    #plt.grid(True)   
+    
+    ax21 = fig.add_subplot( 3, 1, 2 )
+    
+    if use_single_U :
+    
         ax21.plot([T_c_U1, T_c_U1], [0,1], ls='--', 
-        label = '$T_{c} (U=%d) = %.2f$' % (U1,T_c_U1), color=Color[-1], lw=2, alpha=0.5) 
-
-    ax21.plot(temperature_U1, output_neuron2_U1, color=Color[1], marker='o', 
-    linestyle='None', ms=5, markeredgewidth=0.0, alpha=1.0)
-    ax21.plot(temperature_U1, output_neuron1_U1, color=Color[9], marker='o', 
-    linestyle='None', ms=5, markeredgewidth=0.0, alpha=1.0)
-    ax21.plot(temperature_U2, output_neuron2_U2, color=Color[2], marker='o', 
-    linestyle='None', ms=5, markeredgewidth=0.0, alpha=1.0)
-    ax21.plot(temperature_U2, output_neuron1_U2, color=Color[4], marker='o', 
-    linestyle='None', ms=5, markeredgewidth=0.0, alpha=1.0)
-        
-    if grid == 'equal' :
-        if interpolation == 'linear' :
-            ax21.plot(temperature_U1, output_neuron2_U1, color=Color[1],  
-            linestyle='-', lw=2, alpha=1.0)
-            ax21.plot(temperature_U1, output_neuron1_U1, color=Color[9],
-            linestyle='-', lw=2, alpha=1.0)
-            ax21.plot(temperature_U2, output_neuron2_U2, color=Color[2],  
-            linestyle='-', lw=2, alpha=1.0)
-            ax21.plot(temperature_U2, output_neuron1_U2, color=Color[4],
-            linestyle='-', lw=2, alpha=1.0)
-            
-        elif interpolation == 'cubic' :
-            ax21.plot(T_mod2_U1, Output_mod2_U1, 
-            ls='-', label='', color=Color[1], lw=2, alpha=1.0)               
-            ax21.plot(T_mod1_U1, Output_mod1_U1, 
-            ls='-', label='', color=Color[9], lw=2, alpha=1.0)     
-            ax21.plot(T_mod2_U2, Output_mod2_U2, 
-            ls='-', label='', color=Color[2], lw=2, alpha=1.0)               
-            ax21.plot(T_mod1_U2, Output_mod1_U2, 
-            ls='-', label='', color=Color[4], lw=2, alpha=1.0) 
-            
-        ax21.plot(T_c_experiment_x_U1, T_c_experiment_y_U1, 
-        label='$T_{c,\ \mathrm{experiment}} = %.2f$' % T_c_experiment_x_U1, color=Color[-1], 
-        marker='o', linestyle='None', ms=10, markeredgewidth=0.0, alpha=0.5)
-        if T_c_U1_known :
+        label = '$T_{c} (U=%d) = %.2f$' % (U1, T_c_U1), color=Color[-1], lw=2, alpha=0.5)    
+                
+        ax21.plot(temperature_U1, output_neuron2_U1, color=Color[1], marker='o', 
+        linestyle='None', ms=5, markeredgewidth=0.0, alpha=1.0)
+        ax21.plot(temperature_U1, output_neuron1_U1, color=Color[9], marker='o', 
+        linestyle='None', ms=5, markeredgewidth=0.0, alpha=1.0)
+    
+        if grid == 'equal' :
+            if interpolation == 'linear' :
+                ax21.plot(temperature_U1, output_neuron2_U1, color=Color[1],  
+                linestyle='-', lw=2, alpha=1.0)
+                ax21.plot(temperature_U1, output_neuron1_U1, color=Color[9],
+                linestyle='-', lw=2, alpha=1.0)
+            elif interpolation == 'cubic' :
+                ax21.plot(T_mod2_U1, Output_mod2_U1, 
+                ls='-', label='', color=Color[1], lw=2, alpha=1.0)               
+                ax21.plot(T_mod1_U1, Output_mod1_U1, 
+                ls='-', label='', color=Color[9], lw=2, alpha=1.0)     
+            ax21.plot(T_c_experiment_x_U1, T_c_experiment_y_U1, 
+            label='$T_{c,\ \mathrm{experiment}} = %.3f$' % T_c_experiment_x_U1, color=Color[-1], 
+            marker='o', linestyle='None', ms=10, markeredgewidth=0.0, alpha=0.5)
             ax21.plot([],[], 
             label='$\mathrm{Percent\ error} = %.2g %%$'%(abs(1.-T_c_experiment_x_U1/T_c_U1)*100),
             linestyle='None')
-        
-        ax21.plot([T_c_U2, T_c_U2], [0,1], ls='--', 
-        label = '$T_{c} (U=%d) = %.2f$' % (U2, T_c_U2), color=Color[-1], lw=2, alpha=0.5)
-        
-        ax21.plot(T_c_experiment_x_U2, T_c_experiment_y_U2, 
-        label='$T_{c,\ \mathrm{experiment}} = %.2f$' % T_c_experiment_x_U2, color=Color[-1], 
-        marker='o', linestyle='None', ms=10, markeredgewidth=0.0, alpha=0.5)
-        ax21.plot([],[], 
-        label='$\mathrm{Percent\ error} = %.2g %%$'%(abs(1.-T_c_experiment_x_U2/T_c_U2)*100),
-        linestyle='None')
-    
-    if grid == 'log' :
-        if interpolation == 'linear' :
-            ax21.semilogx(temperature_U1, output_neuron2_U1, color=Color[1],  
-            linestyle='-', lw=2, alpha=1.0)
-            ax21.semilogx(temperature_U1, output_neuron1_U1, color=Color[9],
-            linestyle='-', lw=2, alpha=1.0)
-            ax21.semilogx(temperature_U2, output_neuron2_U2, color=Color[2],  
-            linestyle='-', lw=2, alpha=1.0)
-            ax21.semilogx(temperature_U2, output_neuron1_U2, color=Color[4],
-            linestyle='-', lw=2, alpha=1.0)
-            
-        elif interpolation == 'cubic' :        
-            ax21.semilogx(T_mod2_U1, Output_mod2_U1, 
-            ls='-', label='', color=Color[1], lw=2, alpha=1.0)               
-            ax21.semilogx(T_mod1_U1, Output_mod1_U1, 
-            ls='-', label='', color=Color[9], lw=2, alpha=1.0)     
-            ax21.semilogx(T_mod2_U2, Output_mod2_U2, 
-            ls='-', label='', color=Color[2], lw=2, alpha=1.0)               
-            ax21.semilogx(T_mod1_U2, Output_mod1_U2, 
-            ls='-', label='', color=Color[4], lw=2, alpha=1.0) 
-    
-        ax21.semilogx(T_c_experiment_x_U1, T_c_experiment_y_U1, 
-        label='$T_{c,\ \mathrm{experiment}} = %.2f$' % T_c_experiment_x_U1, color=Color[-1], 
-        marker='o', linestyle='None', ms=10, markeredgewidth=0.0, alpha=0.5)
-        if T_c_U1_known :
+                                                
+        if grid == 'log' :
+            if interpolation == 'linear' :
+                ax21.semilogx(temperature_U1, output_neuron2_U1, color=Color[1],  
+                linestyle='-', lw=2, alpha=1.0)
+                ax21.semilogx(temperature_U1, output_neuron1_U1, color=Color[9],
+                linestyle='-', lw=2, alpha=1.0)
+            elif interpolation == 'cubic' :
+                ax21.semilogx(T_mod2_U1, Output_mod2_U1, 
+                ls='-', label='', color=Color[1], lw=2, alpha=1.0)               
+                ax21.semilogx(T_mod1_U1, Output_mod1_U1, 
+                ls='-', label='', color=Color[9], lw=2, alpha=1.0)                
+            ax21.semilogx(T_c_experiment_x_U1, T_c_experiment_y_U1, 
+            label='$T_{c,\ \mathrm{experiment}} = %.3f$' % T_c_experiment_x_U1, color=Color[-1], 
+            marker='o', linestyle='None', ms=10, markeredgewidth=0.0, alpha=0.5)
             ax21.semilogx([],[], 
             label='$\mathrm{Percent\ error} = %.2g %%$'%(abs(1.-T_c_experiment_x_U1/T_c_U1)*100),
             linestyle='None')
         
-        ax21.semilogx([T_c_U2, T_c_U2], [0,1], ls='--', 
-        label = '$T_{c} (U=%d) = %.2f$' % (U2, T_c_U2), color=Color[-1], lw=2, alpha=0.8)
-        
-        ax21.semilogx(T_c_experiment_x_U2, T_c_experiment_y_U2, 
-        label='$T_{c,\ \mathrm{experiment}} = %.2f$' % T_c_experiment_x_U2, color=Color[-1], 
-        marker='o', linestyle='None', ms=10, markeredgewidth=0.0, alpha=0.8)
-        ax21.semilogx([],[], 
-        label='$\mathrm{Percent\ error} = %.2g %%$'%(abs(1.-T_c_experiment_x_U2/T_c_U2)*100),
-        linestyle='None')
+    else :
     
+        if T_c_U1_known :
+            ax21.plot([T_c_U1, T_c_U1], [0,1], ls='--', 
+            label = '$T_{c} (U=%d) = %.2f$' % (U1,T_c_U1), color=Color[-1], lw=2, alpha=0.5) 
     
-ax21.set_xlabel('$\mathrm{Temperature}$', fontsize='25')
-ax21.set_ylabel('$\mathrm{Normalized\ output}$', fontsize='25')
-plt.ylim([0,1])
-plt.xlim([temperature.min(), temperature.max()])
-
-plt.legend(loc='center right', fontsize ='15')
-
-ax21.grid(True)
-
-ax31 = fig.add_subplot( 3, 1, 3 )
-
-ax31.plot(temperature_U1, accuracy_U1, color=Color[1], marker='o', 
-    linestyle='None', ms=5, markeredgewidth=0.0, alpha=1.0)
-ax31.plot(temperature_U1, accuracy_U1, color=Color[1], 
-    label = '$U=%d$' % U1, linestyle='-', lw=2, alpha=1.0)
-    
-if not(use_single_U) :
-    ax31.plot(temperature_U2, accuracy_U2, color=Color[9], marker='o', 
+        ax21.plot(temperature_U1, output_neuron2_U1, color=Color[1], marker='o', 
         linestyle='None', ms=5, markeredgewidth=0.0, alpha=1.0)
-    ax31.plot(temperature_U2, accuracy_U2, color=Color[9],  
-        label = '$U=%d$' % U2, linestyle='-', lw=2, alpha=1.0)
+        ax21.plot(temperature_U1, output_neuron1_U1, color=Color[9], marker='o', 
+        linestyle='None', ms=5, markeredgewidth=0.0, alpha=1.0)
+        ax21.plot(temperature_U2, output_neuron2_U2, color=Color[2], marker='o', 
+        linestyle='None', ms=5, markeredgewidth=0.0, alpha=1.0)
+        ax21.plot(temperature_U2, output_neuron1_U2, color=Color[4], marker='o', 
+        linestyle='None', ms=5, markeredgewidth=0.0, alpha=1.0)
+            
+        if grid == 'equal' :
+            if interpolation == 'linear' :
+                ax21.plot(temperature_U1, output_neuron2_U1, color=Color[1],  
+                linestyle='-', lw=2, alpha=1.0)
+                ax21.plot(temperature_U1, output_neuron1_U1, color=Color[9],
+                linestyle='-', lw=2, alpha=1.0)
+                ax21.plot(temperature_U2, output_neuron2_U2, color=Color[2],  
+                linestyle='-', lw=2, alpha=1.0)
+                ax21.plot(temperature_U2, output_neuron1_U2, color=Color[4],
+                linestyle='-', lw=2, alpha=1.0)
+                
+            elif interpolation == 'cubic' :
+                ax21.plot(T_mod2_U1, Output_mod2_U1, 
+                ls='-', label='', color=Color[1], lw=2, alpha=1.0)               
+                ax21.plot(T_mod1_U1, Output_mod1_U1, 
+                ls='-', label='', color=Color[9], lw=2, alpha=1.0)     
+                ax21.plot(T_mod2_U2, Output_mod2_U2, 
+                ls='-', label='', color=Color[2], lw=2, alpha=1.0)               
+                ax21.plot(T_mod1_U2, Output_mod1_U2, 
+                ls='-', label='', color=Color[4], lw=2, alpha=1.0) 
+                
+            ax21.plot(T_c_experiment_x_U1, T_c_experiment_y_U1, 
+            label='$T_{c,\ \mathrm{experiment}} = %.3f$' % T_c_experiment_x_U1, color=Color[-1], 
+            marker='o', linestyle='None', ms=10, markeredgewidth=0.0, alpha=0.5)
+            if T_c_U1_known :
+                ax21.plot([],[], 
+                label='$\mathrm{Percent\ error} = %.2g %%$'%(abs(1.-T_c_experiment_x_U1/T_c_U1)*100),
+                linestyle='None')
+            
+            ax21.plot([T_c_U2, T_c_U2], [0,1], ls='--', 
+            label = '$T_{c} (U=%d) = %.2f$' % (U2, T_c_U2), color=Color[-1], lw=2, alpha=0.5)
+            
+            ax21.plot(T_c_experiment_x_U2, T_c_experiment_y_U2, 
+            label='$T_{c,\ \mathrm{experiment}} = %.3f$' % T_c_experiment_x_U2, color=Color[-1], 
+            marker='o', linestyle='None', ms=10, markeredgewidth=0.0, alpha=0.5)
+            ax21.plot([],[], 
+            label='$\mathrm{Percent\ error} = %.2g %%$'%(abs(1.-T_c_experiment_x_U2/T_c_U2)*100),
+            linestyle='None')
+        
+        if grid == 'log' :
+            if interpolation == 'linear' :
+                ax21.semilogx(temperature_U1, output_neuron2_U1, color=Color[1],  
+                linestyle='-', lw=2, alpha=1.0)
+                ax21.semilogx(temperature_U1, output_neuron1_U1, color=Color[9],
+                linestyle='-', lw=2, alpha=1.0)
+                ax21.semilogx(temperature_U2, output_neuron2_U2, color=Color[2],  
+                linestyle='-', lw=2, alpha=1.0)
+                ax21.semilogx(temperature_U2, output_neuron1_U2, color=Color[4],
+                linestyle='-', lw=2, alpha=1.0)
+                
+            elif interpolation == 'cubic' :        
+                ax21.semilogx(T_mod2_U1, Output_mod2_U1, 
+                ls='-', label='', color=Color[1], lw=2, alpha=1.0)               
+                ax21.semilogx(T_mod1_U1, Output_mod1_U1, 
+                ls='-', label='', color=Color[9], lw=2, alpha=1.0)     
+                ax21.semilogx(T_mod2_U2, Output_mod2_U2, 
+                ls='-', label='', color=Color[2], lw=2, alpha=1.0)               
+                ax21.semilogx(T_mod1_U2, Output_mod1_U2, 
+                ls='-', label='', color=Color[4], lw=2, alpha=1.0) 
+        
+            ax21.semilogx(T_c_experiment_x_U1, T_c_experiment_y_U1, 
+            label='$T_{c,\ \mathrm{experiment}} = %.3f$' % T_c_experiment_x_U1, color=Color[-1], 
+            marker='o', linestyle='None', ms=10, markeredgewidth=0.0, alpha=0.5)
+            if T_c_U1_known :
+                ax21.semilogx([],[], 
+                label='$\mathrm{Percent\ error} = %.2g %%$'%(abs(1.-T_c_experiment_x_U1/T_c_U1)*100),
+                linestyle='None')
+            
+            ax21.semilogx([T_c_U2, T_c_U2], [0,1], ls='--', 
+            label = '$T_{c} (U=%d) = %.2f$' % (U2, T_c_U2), color=Color[-1], lw=2, alpha=0.8)
+            
+            ax21.semilogx(T_c_experiment_x_U2, T_c_experiment_y_U2, 
+            label='$T_{c,\ \mathrm{experiment}} = %.3f$' % T_c_experiment_x_U2, color=Color[-1], 
+            marker='o', linestyle='None', ms=10, markeredgewidth=0.0, alpha=0.8)
+            ax21.semilogx([],[], 
+            label='$\mathrm{Percent\ error} = %.2g %%$'%(abs(1.-T_c_experiment_x_U2/T_c_U2)*100),
+            linestyle='None')
+        
+        
+    ax21.set_xlabel('$\mathrm{Temperature}$', fontsize='25')
+    ax21.set_ylabel('$\mathrm{Normalized\ output}$', fontsize='25')
+    plt.ylim([0,1])
+    plt.xlim([temperature.min(), temperature.max()])
+    
+    plt.legend(loc='center right', fontsize ='15')
+    
+    ax21.grid(True)
+    
+    ax31 = fig.add_subplot( 3, 1, 3 )
+    
+    ax31.plot(temperature_U1, accuracy_U1, color=Color[1], marker='o', 
+        linestyle='None', ms=5, markeredgewidth=0.0, alpha=1.0)
+    
+    if grid == 'equal' :
+        ax31.plot(temperature_U1, accuracy_U1, color=Color[1], 
+            label = '$U=%d$' % U1, linestyle='-', lw=2, alpha=1.0)
+    if grid == 'log' :
+        ax31.semilogx(temperature_U1, accuracy_U1, color=Color[1], 
+            label = '$U=%d$' % U1, linestyle='-', lw=2, alpha=1.0)
+            
+    if not(use_single_U) :
+        ax31.plot(temperature_U2, accuracy_U2, color=Color[9], marker='o', 
+            linestyle='None', ms=5, markeredgewidth=0.0, alpha=1.0)
+        if grid == 'equal' :
+            ax31.plot(temperature_U2, accuracy_U2, color=Color[9],  
+                label = '$U=%d$' % U2, linestyle='-', lw=2, alpha=1.0)
+        if grid == 'log' :
+            ax31.semilogx(temperature_U2, accuracy_U2, color=Color[9],  
+                label = '$U=%d$' % U2, linestyle='-', lw=2, alpha=1.0)
+    
+    ax31.set_xlabel('$\mathrm{Temperature}$', fontsize='25')
+    ax31.set_ylabel('$\mathrm{Classfication\ accuracy}$', fontsize='25')
+    plt.ylim([0,1])
+    plt.xlim([temperature.min(), temperature.max()])
+    
+    plt.legend(loc='center right', fontsize ='15')
+    
+    ax31.grid(True)
 
-ax31.set_xlabel('$\mathrm{Temperature}$', fontsize='25')
-ax31.set_ylabel('$\mathrm{Classfication\ accuracy}$', fontsize='25')
-plt.ylim([0,1])
-plt.xlim([temperature.min(), temperature.max()])
-
-plt.legend(loc='center right', fontsize ='15')
-
-ax31.grid(True)
+else :
+    
+    fig = plt.figure( figsize = plt.figaspect( 0.65 ) *1.5 )
+    
+    ax21 = fig.add_subplot( 1, 1, 1 )
+    
+    if use_single_U :
+    
+        ax21.plot([T_c_U1, T_c_U1], [0,1], ls='--', 
+        label = '$T_{c} (U=%d) = %.2f$' % (U1,T_c_U1), color=Color[-1], lw=2, alpha=0.5)    
+                
+        ax21.plot(temperature_U1, output_neuron2_U1, color=Color[1], marker='o', 
+        linestyle='None', ms=5, markeredgewidth=0.0, alpha=1.0)
+        ax21.plot(temperature_U1, output_neuron1_U1, color=Color[9], marker='o', 
+        linestyle='None', ms=5, markeredgewidth=0.0, alpha=1.0)
+    
+        if grid == 'equal' :
+            if interpolation == 'linear' :
+                ax21.plot(temperature_U1, output_neuron2_U1, color=Color[1],  
+                linestyle='-', lw=2, alpha=1.0)
+                ax21.plot(temperature_U1, output_neuron1_U1, color=Color[9],
+                linestyle='-', lw=2, alpha=1.0)
+            elif interpolation == 'cubic' :
+                ax21.plot(T_mod2_U1, Output_mod2_U1, 
+                ls='-', label='', color=Color[1], lw=2, alpha=1.0)               
+                ax21.plot(T_mod1_U1, Output_mod1_U1, 
+                ls='-', label='', color=Color[9], lw=2, alpha=1.0)     
+            ax21.plot(T_c_experiment_x_U1, T_c_experiment_y_U1, 
+            label='$T_{c,\ \mathrm{experiment}} = %.3f$' % T_c_experiment_x_U1, color=Color[-1], 
+            marker='o', linestyle='None', ms=10, markeredgewidth=0.0, alpha=0.5)
+            ax21.plot([],[], 
+            label='$\mathrm{Percent\ error} = %.2g %%$'%(abs(1.-T_c_experiment_x_U1/T_c_U1)*100),
+            linestyle='None')
+                                                
+        if grid == 'log' :
+            if interpolation == 'linear' :
+                ax21.semilogx(temperature_U1, output_neuron2_U1, color=Color[1],  
+                linestyle='-', lw=2, alpha=1.0)
+                ax21.semilogx(temperature_U1, output_neuron1_U1, color=Color[9],
+                linestyle='-', lw=2, alpha=1.0)
+            elif interpolation == 'cubic' :
+                ax21.semilogx(T_mod2_U1, Output_mod2_U1, 
+                ls='-', label='', color=Color[1], lw=2, alpha=1.0)               
+                ax21.semilogx(T_mod1_U1, Output_mod1_U1, 
+                ls='-', label='', color=Color[9], lw=2, alpha=1.0)                
+            ax21.semilogx(T_c_experiment_x_U1, T_c_experiment_y_U1, 
+            label='$T_{c,\ \mathrm{experiment}} = %.3f$' % T_c_experiment_x_U1, color=Color[-1], 
+            marker='o', linestyle='None', ms=10, markeredgewidth=0.0, alpha=0.5)
+            ax21.semilogx([],[], 
+            label='$\mathrm{Percent\ error} = %.2g %%$'%(abs(1.-T_c_experiment_x_U1/T_c_U1)*100),
+            linestyle='None')
+        
+    else :
+    
+        if T_c_U1_known :
+            ax21.plot([T_c_U1, T_c_U1], [0,1], ls='--', 
+            label = '$T_{c} (U=%d) = %.2f$' % (U1,T_c_U1), color=Color[-1], lw=2, alpha=0.5) 
+    
+        ax21.plot(temperature_U1, output_neuron2_U1, color=Color[1], marker='o', 
+        linestyle='None', ms=5, markeredgewidth=0.0, alpha=1.0)
+        ax21.plot(temperature_U1, output_neuron1_U1, color=Color[9], marker='o', 
+        linestyle='None', ms=5, markeredgewidth=0.0, alpha=1.0)
+        ax21.plot(temperature_U2, output_neuron2_U2, color=Color[2], marker='o', 
+        linestyle='None', ms=5, markeredgewidth=0.0, alpha=1.0)
+        ax21.plot(temperature_U2, output_neuron1_U2, color=Color[4], marker='o', 
+        linestyle='None', ms=5, markeredgewidth=0.0, alpha=1.0)
+            
+        if grid == 'equal' :
+            if interpolation == 'linear' :
+                ax21.plot(temperature_U1, output_neuron2_U1, color=Color[1],  
+                linestyle='-', lw=2, alpha=1.0)
+                ax21.plot(temperature_U1, output_neuron1_U1, color=Color[9],
+                linestyle='-', lw=2, alpha=1.0)
+                ax21.plot(temperature_U2, output_neuron2_U2, color=Color[2],  
+                linestyle='-', lw=2, alpha=1.0)
+                ax21.plot(temperature_U2, output_neuron1_U2, color=Color[4],
+                linestyle='-', lw=2, alpha=1.0)
+                
+            elif interpolation == 'cubic' :
+                ax21.plot(T_mod2_U1, Output_mod2_U1, 
+                ls='-', label='', color=Color[1], lw=2, alpha=1.0)               
+                ax21.plot(T_mod1_U1, Output_mod1_U1, 
+                ls='-', label='', color=Color[9], lw=2, alpha=1.0)     
+                ax21.plot(T_mod2_U2, Output_mod2_U2, 
+                ls='-', label='', color=Color[2], lw=2, alpha=1.0)               
+                ax21.plot(T_mod1_U2, Output_mod1_U2, 
+                ls='-', label='', color=Color[4], lw=2, alpha=1.0) 
+                
+            ax21.plot(T_c_experiment_x_U1, T_c_experiment_y_U1, 
+            label='$T_{c,\ \mathrm{experiment}} = %.3f$' % T_c_experiment_x_U1, color=Color[-1], 
+            marker='o', linestyle='None', ms=10, markeredgewidth=0.0, alpha=0.5)
+            if T_c_U1_known :
+                ax21.plot([],[], 
+                label='$\mathrm{Percent\ error} = %.2g %%$'%(abs(1.-T_c_experiment_x_U1/T_c_U1)*100),
+                linestyle='None')
+            
+            ax21.plot([T_c_U2, T_c_U2], [0,1], ls='--', 
+            label = '$T_{c} (U=%d) = %.2f$' % (U2, T_c_U2), color=Color[-1], lw=2, alpha=0.5)
+            
+            ax21.plot(T_c_experiment_x_U2, T_c_experiment_y_U2, 
+            label='$T_{c,\ \mathrm{experiment}} = %.3f$' % T_c_experiment_x_U2, color=Color[-1], 
+            marker='o', linestyle='None', ms=10, markeredgewidth=0.0, alpha=0.5)
+            ax21.plot([],[], 
+            label='$\mathrm{Percent\ error} = %.2g %%$'%(abs(1.-T_c_experiment_x_U2/T_c_U2)*100),
+            linestyle='None')
+        
+        if grid == 'log' :
+            if interpolation == 'linear' :
+                ax21.semilogx(temperature_U1, output_neuron2_U1, color=Color[1],  
+                linestyle='-', lw=2, alpha=1.0)
+                ax21.semilogx(temperature_U1, output_neuron1_U1, color=Color[9],
+                linestyle='-', lw=2, alpha=1.0)
+                ax21.semilogx(temperature_U2, output_neuron2_U2, color=Color[2],  
+                linestyle='-', lw=2, alpha=1.0)
+                ax21.semilogx(temperature_U2, output_neuron1_U2, color=Color[4],
+                linestyle='-', lw=2, alpha=1.0)
+                
+            elif interpolation == 'cubic' :        
+                ax21.semilogx(T_mod2_U1, Output_mod2_U1, 
+                ls='-', label='', color=Color[1], lw=2, alpha=1.0)               
+                ax21.semilogx(T_mod1_U1, Output_mod1_U1, 
+                ls='-', label='', color=Color[9], lw=2, alpha=1.0)     
+                ax21.semilogx(T_mod2_U2, Output_mod2_U2, 
+                ls='-', label='', color=Color[2], lw=2, alpha=1.0)               
+                ax21.semilogx(T_mod1_U2, Output_mod1_U2, 
+                ls='-', label='', color=Color[4], lw=2, alpha=1.0) 
+        
+            ax21.semilogx(T_c_experiment_x_U1, T_c_experiment_y_U1, 
+            label='$T_{c,\ \mathrm{experiment}} = %.3f$' % T_c_experiment_x_U1, color=Color[-1], 
+            marker='o', linestyle='None', ms=10, markeredgewidth=0.0, alpha=0.5)
+            if T_c_U1_known :
+                ax21.semilogx([],[], 
+                label='$\mathrm{Percent\ error} = %.2g %%$'%(abs(1.-T_c_experiment_x_U1/T_c_U1)*100),
+                linestyle='None')
+            
+            ax21.semilogx([T_c_U2, T_c_U2], [0,1], ls='--', 
+            label = '$T_{c} (U=%d) = %.2f$' % (U2, T_c_U2), color=Color[-1], lw=2, alpha=0.8)
+            
+            ax21.semilogx(T_c_experiment_x_U2, T_c_experiment_y_U2, 
+            label='$T_{c,\ \mathrm{experiment}} = %.3f$' % T_c_experiment_x_U2, color=Color[-1], 
+            marker='o', linestyle='None', ms=10, markeredgewidth=0.0, alpha=0.8)
+            ax21.semilogx([],[], 
+            label='$\mathrm{Percent\ error} = %.2g %%$'%(abs(1.-T_c_experiment_x_U2/T_c_U2)*100),
+            linestyle='None')
+        
+        
+    ax21.set_xlabel('$\mathrm{Temperature}$', fontsize='25')
+    ax21.set_ylabel('$\mathrm{Normalized\ output}$', fontsize='25')
+    plt.ylim([0,1])
+    plt.xlim([temperature.min(), temperature.max()])
+    
+    plt.legend(loc='center right', fontsize ='15')
+    
+    ax21.grid(True)
 
 # Add date as footnote
 plt.figtext(.05, .02, date)
@@ -437,7 +624,7 @@ plt.figtext(.05, .02, date)
 plt.tight_layout( )              
 fig.suptitle( title, fontsize ='24', y =0.99 )
 plt.subplots_adjust( top=0.94 )
-plt.savefig( date + '_plot.png', dpi=300)
+plt.savefig( date + '.png', dpi=300)
 print 'Plot saved.'
 plt.show()
 mng = plt.get_current_fig_manager()
