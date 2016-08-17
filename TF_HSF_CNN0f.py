@@ -49,7 +49,7 @@ overtraining_threshold = 10
 # to be saved.
 best_test_accuracy = 0.5
 # Maximum number of data file to be used for training and testing.
-Max_nfile = 100
+Max_nfile = 10
 # Offset to the file index (to load)
 File_index_offset = 0
 
@@ -349,7 +349,7 @@ if train_neural_network or not(load_test_data_only) :
   iteration_per_epoch=n_train_data/batch_size
 
   print 'Number of training data: %d' % n_train_data
-elif train_neural_network == F and perform_classification_with_label :
+elif not(train_neural_network) and perform_classification_with_label :
   n_train_data = len(dtau)*ndata_per_temp - len(HSF.test.labels)
   print 'Number of training data: %d' % n_train_data
 else :
@@ -565,6 +565,7 @@ if train_neural_network :
   m = 0
   Overtraining = False
   best_epoch   = 0
+  file_save_counter = 0
 
   for j in range(epochs):
     # Break out of the training epoch loop if overtraining is encountered.
@@ -593,10 +594,24 @@ if train_neural_network :
           # Save the best model thus far if the above two criteria are met.
           print 'Saving model %s and measurements %s.' % ((filename_weight_bias%(best_test_accuracy*100)).replace('./',''), (filename_measure%(best_test_accuracy*100)).replace('./',''))
           saver = tf.train.Saver([W_conv1, b_conv1, W_conv2, b_conv2, W_conv3, b_conv3, W_fc1, b_fc1, W_fc2, b_fc2])
-          save_path = saver.save(sess, (filename_weight_bias%(best_test_accuracy*100)) )
-          check_model = tf.reduce_mean(W_conv1).eval()
           best_epoch = (n+1)*fractional_epoch
-          np.savetxt( (filename_measure%(best_test_accuracy*100)), Table_measure[:n+1,:])
+          if file_save_counter == 0 :
+            filename_weight_bias_tmp = (filename_weight_bias%(best_test_accuracy*100))
+            filename_measure_tmp = (filename_measure%(best_test_accuracy*100))
+            save_path = saver.save(sess, filename_weight_bias_tmp )
+            np.savetxt( filename_measure_tmp, Table_measure[:n+1,:])
+            check_model = tf.reduce_mean(W_conv1).eval()
+            file_save_counter += 1
+          else :
+            os.remove( filename_weight_bias_tmp )
+            os.remove( filename_weight_bias_tmp + '.meta' )
+            os.remove( filename_measure_tmp )
+            filename_weight_bias_tmp = (filename_weight_bias%(best_test_accuracy*100))
+            filename_measure_tmp = (filename_measure%(best_test_accuracy*100))
+            save_path = saver.save(sess, filename_weight_bias_tmp )
+            np.savetxt( filename_measure_tmp, Table_measure[:n+1,:])
+            check_model = tf.reduce_mean(W_conv1).eval()
+            file_save_counter += 1
         # Check for overtraining/ overfitting. If so, stop training and break out of the
         # training iteration per epoch loop.
         if train_accuracy > test_accuracy :
@@ -635,20 +650,37 @@ if train_neural_network :
     delta_accuracy = abs(train_accuracy - test_accuracy)
     if test_accuracy > best_test_accuracy :
       if (delta_accuracy <= delta_accuracy_threshold) and delta_accuracy > 0 :
-        print 'Saving model...' 
+        # Update the best test accuracy
+        best_test_accuracy = test_accuracy
+        print 'Saving model and measurements...'
         saver = tf.train.Saver([W_conv1, b_conv1, W_conv2, b_conv2, W_conv3, b_conv3, W_fc1, b_fc1, W_fc2, b_fc2])
-        save_path = saver.save(sess, (filename_weight_bias%(best_test_accuracy*100)) )
         check_model = tf.reduce_mean(W_conv1).eval()
+
         best_epoch = ndata_collect*fractional_epoch
+        os.remove( filename_weight_bias_tmp )
+        os.remove( filename_weight_bias_tmp + '.meta' )
+        os.remove( filename_measure_tmp )
+        filename_weight_bias_tmp = (filename_weight_bias%(best_test_accuracy*100))
+        filename_measure_tmp = (filename_measure%(best_test_accuracy*100))
+        save_path = saver.save(sess, filename_weight_bias_tmp )
+        np.savetxt(filename_measure_tmp, Table_measure)
+
     print '%.2fs, epoch %.2f, training accuracy %g, test accuracy %g, cost %g' % (time.time()-start_time,(n+1)*fractional_epoch, train_accuracy, test_accuracy, Cost)
   else :
+    os.remove( filename_measure_tmp )
+    filename_measure_tmp = (filename_measure%(best_test_accuracy*100))
     print 'Saving measurements %s.' % (filename_measure%(best_test_accuracy*100)).replace('./','')
-    np.savetxt( (filename_measure%(best_test_accuracy*100)), Table_measure[:n+1,:])
+    # Save the measurements:
+    # First column : Training epochs
+    # Second column: Training accuracy
+    # Third column : Testing accuracy
+    # Fourth column: Cost
+    np.savetxt(filename_measure_tmp, Table_measure[:n+1,:])
 
   if best_epoch == 0 :
     print 'Training model is not saved as saving criteria are not met. Classification will not be performed.'
     saver.restore(sess, filename_trained_model)
-    model_saving_criteria_not_met = True 
+    model_saving_criteria_not_met = True
   else :
     print 'Best training epoch: %g' % best_epoch
     print 'Model saved in file: ', save_path
@@ -656,19 +688,15 @@ if train_neural_network :
     # To proceed, load the best (saved) model instead of the last training model.i
     filename_trained_model = (filename_weight_bias%(best_test_accuracy*100))
     saver.restore(sess, filename_trained_model)
-    model_saving_criteria_not_met = False
 
     # Check if the saved model and the restored model are the same.
     if check_model != tf.reduce_mean(W_conv1).eval() :
       print 'Warning! Best training model and the restored model is incompatible. Exiting...'
       sys.exit()
 
-  # Save the measurements:
-  # First column : Training epochs
-  # Second column: Training accuracy
-  # Third column : Testing accuracy
-  # Fourth column: Cost
-  np.savetxt( (filename_measure%(best_test_accuracy*100)), Table_measure)
+
+
+
 
 # Classification ---------------------------------------------------------------------
 
@@ -748,9 +776,5 @@ elif not(model_saving_criteria_not_met) :
   # Normalized output of the first neuron
   Table[:,2] = 1.0-Table[:,1]
 
-  if train_neural_network :
-    np.savetxt((filename_classified%(best_test_accuracy*100)), Table)
-    print 'Classified result saved as %s.' % (filename_classified%(best_test_accuracy*100))
-  else :
-    np.savetxt(filename_classified, Table)
-    print 'Classified result saved as %s.' % filename_classified
+  np.savetxt(filename_classified, Table)
+  print 'Classified result saved as %s.' % filename_classified
