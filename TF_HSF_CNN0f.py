@@ -49,7 +49,7 @@ overtraining_threshold = 10
 # to be saved.
 best_test_accuracy = 0.5
 # Maximum number of data file to be used for training and testing.
-Max_nfile = 10
+Max_nfile = 100
 # Offset to the file index (to load)
 File_index_offset = 0
 
