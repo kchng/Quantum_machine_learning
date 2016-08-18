@@ -18,7 +18,7 @@ T, F = True, False
 NNetwork = 'CNN0f'
 
 # Trained model
-filename_trained_model = "./20160816-1635_model_U5_CNN0f_test_acc_79.8.ckpt"
+filename_trained_model = "./20160817-1700_model_U5+U16_CNN0f_test_acc_72.0.ckpt"
 name_output_file_by_date_first = T
 
 sess = tf.InteractiveSession()
@@ -35,7 +35,7 @@ train_neural_network = T
 continue_training_using_trained_model = F
 
 # Select (T) to use one U for training or (F) to use data set with 2 U for training.
-use_single_U = True
+use_single_U = False
 
 # Number of training epoch
 epochs = 500
@@ -58,7 +58,7 @@ File_index_offset = 0
 # data or (T) to perform classification on raw data. When train_neural_network is
 # set to (T), perform_classification_with_label is set to (T) automatically and
 # clasification will be done on labelled data.
-perform_classification_with_label = F
+perform_classification_with_label = T
 
 if not(perform_classification_with_label) :
     use_single_U = True
@@ -72,7 +72,7 @@ else :
     # Potential energy 1 
     U1 = 5
     # Potential energy 2
-    U2 = 20
+    U2 = 16
 
 # System size
 #   number of spin in each of the cube dimension
@@ -715,7 +715,7 @@ print 'Performing classification using %s.' % filename_trained_model.replace('./
 
 # Classification with labels ---------------------------------------------------------
 
-if not(best_test_accuracy) or perform_classification_with_label and not(model_saving_criteria_not_met) :
+if not(slow_learning) or perform_classification_with_label and not(model_saving_criteria_not_met) :
 
   # First column : Temperature
   # Second column: Average classified output of the second neuron
@@ -759,7 +759,7 @@ if not(best_test_accuracy) or perform_classification_with_label and not(model_sa
 
 # Classification on raw data --------------------------------------------------------
 
-elif not(best_test_accuracy) or not(model_saving_criteria_not_met) :
+elif not(slow_learning) or not(model_saving_criteria_not_met) :
 
   # First column : Temperature
   # Second column: Average classified output of the second neuron
