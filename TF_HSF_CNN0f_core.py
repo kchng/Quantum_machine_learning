@@ -391,12 +391,17 @@ class optimise_hyperparameters :
         n_overtraining_counter = 0
         m = 0
         Overtraining = False
+        slow_learning = False
         best_epoch   = 0
         file_save_counter = 0        
 
         for j in range(epochs):
           # Break out of the training epoch loop if overtraining is encountered.
           if Overtraining :
+            break
+          if best_test_accuracy < 0.6 and j > 10 :
+            slow_learning = True
+            print 'Slow learning. Exiting...'
             break
           for i in range(iteration_per_epoch):
             batch = HSF.train.next_batch(batch_size)
@@ -523,30 +528,32 @@ class optimise_hyperparameters :
         
         # Classification ---------------------------------------------------------------------
 
-        print 'Performing classification using %s.' % filename_trained_model.replace('./','')
+        if not(slow_learning) :
 
-        # First column : Temperature
-        # Second column: Average classified output of the second neuron
-        # Third column : Average classified output of the first neuron
-        # Fourth column: Classification accuracy
-        # Fifth column : Number of data used
-        Table = np.zeros(( len(dtau), 5))
-        Table[:,0] = dtau
+          print 'Performing classification using %s.' % filename_trained_model.replace('./','')
 
-        for i in range(len(HSF.test.temps)) :
-          # Output of neural net vs temperature
-          Table[HSF.test.temps[i],1] += np.argmax(y_conv.eval(feed_dict={x: HSF.test.images[i,:].reshape(1,V4d), keep_prob: 1.0}))
-          # Accuracy vs temperature
-          Table[HSF.test.temps[i],3] += accuracy.eval(feed_dict={x: HSF.test.images[i,:].reshape(1,V4d), y_: HSF.test.labels[i,:].reshape(1,n_output_neuron), keep_prob: 1.0})
-          Table[HSF.test.temps[i],-1] += 1
+          # First column : Temperature
+          # Second column: Average classified output of the second neuron
+          # Third column : Average classified output of the first neuron
+          # Fourth column: Classification accuracy
+          # Fifth column : Number of data used
+          Table = np.zeros(( len(dtau), 5))
+          Table[:,0] = dtau
 
-        # Normalize the output of the second neuron
-        Table[:,1] = Table[:,1]/Table[:,-1].astype('float')
-        # Normalized output of the first neuron
-        Table[:,2] = 1.0-Table[:,1]
-        # Normalize the classification accuracy
-        Table[:,3] = Table[:,3]/Table[:,-1].astype('float')
+          for i in range(len(HSF.test.temps)) :
+            # Output of neural net vs temperature
+            Table[HSF.test.temps[i],1] += np.argmax(y_conv.eval(feed_dict={x: HSF.test.images[i,:].reshape(1,V4d), keep_prob: 1.0}))
+            # Accuracy vs temperature
+            Table[HSF.test.temps[i],3] += accuracy.eval(feed_dict={x: HSF.test.images[i,:].reshape(1,V4d), y_: HSF.test.labels[i,:].reshape(1,n_output_neuron), keep_prob: 1.0})
+            Table[HSF.test.temps[i],-1] += 1
 
-        np.savetxt((filename_result%(best_test_accuracy*100)), Table)
-        print 'Result saved as %s.' % (filename_result%(best_test_accuracy*100))
+          # Normalize the output of the second neuron
+          Table[:,1] = Table[:,1]/Table[:,-1].astype('float')
+          # Normalized output of the first neuron
+          Table[:,2] = 1.0-Table[:,1]
+          # Normalize the classification accuracy
+          Table[:,3] = Table[:,3]/Table[:,-1].astype('float')
+
+          np.savetxt((filename_result%(best_test_accuracy*100)), Table)
+          print 'Result saved as %s.' % (filename_result%(best_test_accuracy*100))
 

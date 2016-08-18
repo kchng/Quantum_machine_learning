@@ -564,12 +564,17 @@ if train_neural_network :
   n_overtraining_counter = 0
   m = 0
   Overtraining = False
+  slow_learning = False
   best_epoch   = 0
   file_save_counter = 0
 
   for j in range(epochs):
     # Break out of the training epoch loop if overtraining is encountered.
     if Overtraining :
+      break
+    if best_test_accuracy < 0.6 and j > 10 :
+      slow_learning = True
+      print 'Slow learning. Exiting...'
       break
     for i in range(iteration_per_epoch):
       batch = HSF.train.next_batch(batch_size)
@@ -710,7 +715,7 @@ print 'Performing classification using %s.' % filename_trained_model.replace('./
 
 # Classification with labels ---------------------------------------------------------
 
-if perform_classification_with_label and not(model_saving_criteria_not_met) :
+if not(best_test_accuracy) or perform_classification_with_label and not(model_saving_criteria_not_met) :
 
   # First column : Temperature
   # Second column: Average classified output of the second neuron
@@ -754,7 +759,7 @@ if perform_classification_with_label and not(model_saving_criteria_not_met) :
 
 # Classification on raw data --------------------------------------------------------
 
-elif not(model_saving_criteria_not_met) :
+elif not(best_test_accuracy) or not(model_saving_criteria_not_met) :
 
   # First column : Temperature
   # Second column: Average classified output of the second neuron
