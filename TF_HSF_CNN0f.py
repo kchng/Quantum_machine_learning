@@ -572,7 +572,7 @@ if train_neural_network :
     # Break out of the training epoch loop if overtraining is encountered.
     if Overtraining :
       break
-    if best_test_accuracy < 0.6 and j > 10 :
+    if best_test_accuracy <= 0.6 and j >= 5 :
       slow_learning = True
       print 'Slow learning. Exiting...'
       break
@@ -698,7 +698,7 @@ if train_neural_network :
     if check_model != tf.reduce_mean(W_conv1).eval() :
       print 'Warning! Best training model and the restored model is incompatible. Exiting...'
       sys.exit()
-
+    model_saving_criteria_not_met = False
 
 
 

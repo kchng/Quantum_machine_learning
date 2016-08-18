@@ -399,7 +399,7 @@ class optimise_hyperparameters :
           # Break out of the training epoch loop if overtraining is encountered.
           if Overtraining :
             break
-          if best_test_accuracy < 0.6 and j > 10 :
+          if best_test_accuracy <= 0.6 and j >= 4 :
             slow_learning = True
             print 'Slow learning. Exiting...'
             break
@@ -525,10 +525,11 @@ class optimise_hyperparameters :
           if check_model != tf.reduce_mean(W_conv1).eval() :
             print 'Warning! Best training model and the restored model is incompatible. Exiting...'
             sys.exit()
+          model_saving_criteria_not_met = False
         
         # Classification ---------------------------------------------------------------------
 
-        if not(slow_learning) :
+        if not(slow_learning) or not(model_saving_criteria_not_met):
 
           print 'Performing classification using %s.' % filename_trained_model.replace('./','')
 
