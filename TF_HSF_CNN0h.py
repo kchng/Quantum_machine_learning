@@ -15,12 +15,11 @@ import tensorflow as tf
 T, F = True, False
 
 # Code name of the neural network
-NNetwork = 'CNN0f'
+NNetwork = 'CNN0h'
 
 # Trained model
-filename_trained_model = "./20160817-1700_model_U5+U16_CNN0f_test_acc_72.0.ckpt"
 filename_trained_model = "./20160817-2343_model_U5+U16_CNN0f_test_acc_88.2.ckpt"
-name_output_file_by_date_first = T
+name_output_file_by_date_first = F
 
 sess = tf.InteractiveSession()
 
@@ -33,7 +32,7 @@ sess = tf.InteractiveSession()
 # data by setting train_neural_network to (F) and perform_classification_with_label
 # to (F).
 train_neural_network = F
-continue_training_using_trained_model = T
+continue_training_using_trained_model = F
 
 # Select (T) to use one U for training or (F) to use data set with 2 U for training.
 use_single_U = False
@@ -218,10 +217,10 @@ else :
 # Feature extraction layer(s)
 n_feature_map1 = 32
 n_feature_map2 = 16
-n_feature_map3 = 8
+#n_feature_map3 = 8
 
 # Classification layer
-n_fully_connected_neuron = 8
+n_fully_connected_neuron = 16
 n_output_neuron = 2
 
 # Spatial filter size: filter depth, height, and width
@@ -420,21 +419,21 @@ x_image = tf.reshape(x, [-1,n_x,n_x,n_x,L])
 # Then convolve x_image with the weight tensor, add the bias, apply the
 # ReLU function. Zero padding is used in conv3d, i.e. padding = 'SAME',
 # the output size : n_feature_map1 x n_x x n_x x n_x
-h_conv1 = tf.nn.relu(conv3d(x_image, W_conv1, pad='SAME') + b_conv1)
+h_conv1 = tf.nn.relu(conv3d(x_image, W_conv1, pad='VALID') + b_conv1)
 
 
 # Second Convolution Layer
 W_conv2 = weight_variable([filter_d,filter_h,filter_w,n_feature_map1,n_feature_map2])
 b_conv2 = bias_variable([n_feature_map2])
 
-h_conv2 = tf.nn.relu(conv3d(h_conv1, W_conv2, pad='SAME') + b_conv2)
+h_conv2 = tf.nn.relu(conv3d(h_conv1, W_conv2, pad='VALID') + b_conv2)
 
 
 # Third Convolution Layer
-W_conv3 = weight_variable([filter_d,filter_h,filter_w,n_feature_map2,n_feature_map3])
-b_conv3 = bias_variable([n_feature_map3])
+#W_conv3 = weight_variable([filter_d,filter_h,filter_w,n_feature_map2,n_feature_map3])
+#b_conv3 = bias_variable([n_feature_map3])
 
-h_conv3 = tf.nn.relu(conv3d(h_conv2, W_conv3, pad='SAME') + b_conv3)
+#h_conv3 = tf.nn.relu(conv3d(h_conv2, W_conv3, pad='SAME') + b_conv3)
 
 
 # Classification layer ---------------------------------------------------------------
@@ -444,10 +443,10 @@ h_conv3 = tf.nn.relu(conv3d(h_conv2, W_conv3, pad='SAME') + b_conv3)
 # allow processing on the entire image. The tensor from the previous layer
 # is reshaped into a batch of vectors, multiply by a weight matrix, add a
 # bias, and apply a ReLU.
-W_fc1 = weight_variable([n_feature_map3*(n_x)**3, n_fully_connected_neuron])
+W_fc1 = weight_variable([n_feature_map2*(n_x-2)**3, n_fully_connected_neuron])
 b_fc1 = bias_variable([n_fully_connected_neuron])
 
-h_conv1_flat = tf.reshape(h_conv3, [-1, n_feature_map3*(n_x)**3])
+h_conv1_flat = tf.reshape(h_conv2, [-1, n_feature_map2*(n_x-2)**3])
 h_fc1 = tf.nn.relu(tf.matmul(h_conv1_flat, W_fc1) + b_fc1)
 
 
@@ -537,7 +536,7 @@ if train_neural_network :
 
     if file_exist :
       print 'Continue training using %s.' % filename_trained_model.replace('./','')
-      saver = tf.train.Saver([W_conv1, b_conv1, W_conv2, b_conv2, W_conv3, b_conv3, W_fc1, b_fc1, W_fc2, b_fc2])
+      saver = tf.train.Saver([W_conv1, b_conv1, W_conv2, b_conv2, W_fc1, b_fc1, W_fc2, b_fc2])
       # Restore trained model.
       save_path = saver.restore(sess, filename_trained_model)
 
@@ -565,7 +564,6 @@ if train_neural_network :
   n_overtraining_counter = 0
   m = 0
   Overtraining = False
-  slow_learning = False
   best_epoch   = 0
   file_save_counter = 0
 
@@ -599,7 +597,7 @@ if train_neural_network :
           best_test_accuracy = test_accuracy
           # Save the best model thus far if the above two criteria are met.
           print 'Saving model %s and measurements %s.' % ((filename_weight_bias%(best_test_accuracy*100)).replace('./',''), (filename_measure%(best_test_accuracy*100)).replace('./',''))
-          saver = tf.train.Saver([W_conv1, b_conv1, W_conv2, b_conv2, W_conv3, b_conv3, W_fc1, b_fc1, W_fc2, b_fc2])
+          saver = tf.train.Saver([W_conv1, b_conv1, W_conv2, b_conv2, W_fc1, b_fc1, W_fc2, b_fc2])
           best_epoch = (n+1)*fractional_epoch
           if file_save_counter == 0 :
             filename_weight_bias_tmp = (filename_weight_bias%(best_test_accuracy*100))
@@ -659,7 +657,7 @@ if train_neural_network :
         # Update the best test accuracy
         best_test_accuracy = test_accuracy
         print 'Saving model and measurements...'
-        saver = tf.train.Saver([W_conv1, b_conv1, W_conv2, b_conv2, W_conv3, b_conv3, W_fc1, b_fc1, W_fc2, b_fc2])
+        saver = tf.train.Saver([W_conv1, b_conv1, W_conv2, b_conv2, W_fc1, b_fc1, W_fc2, b_fc2])
         check_model = tf.reduce_mean(W_conv1).eval()
 
         best_epoch = ndata_collect*fractional_epoch
@@ -707,7 +705,7 @@ if train_neural_network :
 # Classification ---------------------------------------------------------------------
 
 else :
-  saver = tf.train.Saver([W_conv1, b_conv1, W_conv2, b_conv2, W_conv3, b_conv3, W_fc1, b_fc1, W_fc2, b_fc2])
+  saver = tf.train.Saver([W_conv1, b_conv1, W_conv2, b_conv2, W_fc1, b_fc1, W_fc2, b_fc2])
   # To proceed, load the trained model.
   saver.restore(sess, filename_trained_model)
   model_saving_criteria_not_met = False
