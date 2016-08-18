@@ -18,7 +18,6 @@ T, F = True, False
 NNetwork = 'CNN0f'
 
 # Trained model
-filename_trained_model = "./20160817-1700_model_U5+U16_CNN0f_test_acc_72.0.ckpt"
 filename_trained_model = "./20160817-2343_model_U5+U16_CNN0f_test_acc_88.2.ckpt"
 name_output_file_by_date_first = T
 
@@ -36,7 +35,7 @@ train_neural_network = F
 continue_training_using_trained_model = T
 
 # Select (T) to use one U for training or (F) to use data set with 2 U for training.
-use_single_U = False
+use_single_U = True
 
 # Number of training epoch
 epochs = 500
@@ -59,7 +58,7 @@ File_index_offset = 0
 # data or (T) to perform classification on raw data. When train_neural_network is
 # set to (T), perform_classification_with_label is set to (T) automatically and
 # clasification will be done on labelled data.
-perform_classification_with_label = T
+perform_classification_with_label = F
 
 if not(perform_classification_with_label) :
     use_single_U = True
@@ -68,7 +67,7 @@ if not(perform_classification_with_label) :
 
 if use_single_U :
     # Potential energy
-    U = 5
+    U = 4
 else :
     # Potential energy 1 
     U1 = 5
@@ -717,7 +716,7 @@ print 'Performing classification using %s.' % filename_trained_model.replace('./
 
 # Classification with labels ---------------------------------------------------------
 
-if not(slow_learning) or perform_classification_with_label and not(model_saving_criteria_not_met) :
+if not(slow_learning) and perform_classification_with_label and not(model_saving_criteria_not_met) :
 
   # First column : Temperature
   # Second column: Average classified output of the second neuron
@@ -761,7 +760,7 @@ if not(slow_learning) or perform_classification_with_label and not(model_saving_
 
 # Classification on raw data --------------------------------------------------------
 
-elif not(slow_learning) or not(model_saving_criteria_not_met) :
+elif not(slow_learning) and not(model_saving_criteria_not_met) :
 
   # First column : Temperature
   # Second column: Average classified output of the second neuron
