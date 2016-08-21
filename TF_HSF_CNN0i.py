@@ -15,10 +15,10 @@ import tensorflow as tf
 T, F = True, False
 
 # Code name of the neural network
-NNetwork = 'CNN0f'
+NNetwork = 'CNN0i'
 
 # Trained model
-filename_trained_model = "./20160817-2343_model_U5+U16_CNN0f_test_acc_88.2.ckpt"
+filename_trained_model = "./20160820-0843_model_U4+U20_CNN0i_CR154_CR226_CR314_CR418_fc64_test_acc_84.8.ckpt"
 name_output_file_by_date_first = T
 
 sess = tf.InteractiveSession()
@@ -31,11 +31,11 @@ sess = tf.InteractiveSession()
 # (T) or it can also be used for performing classification using raw unlabelled
 # data by setting train_neural_network to (F) and perform_classification_with_label
 # to (F).
-train_neural_network = F
+train_neural_network = T
 continue_training_using_trained_model = T
 
 # Select (T) to use one U for training or (F) to use data set with 2 U for training.
-use_single_U = True
+use_single_U = False
 
 # Number of training epoch
 epochs = 500
@@ -49,7 +49,7 @@ overtraining_threshold = 10
 # to be saved.
 best_test_accuracy = 0.5
 # Maximum number of data file to be used for training and testing.
-Max_nfile = 100
+Max_nfile = 10
 # Offset to the file index (to load)
 File_index_offset = 0
 
@@ -58,7 +58,7 @@ File_index_offset = 0
 # data or (T) to perform classification on raw data. When train_neural_network is
 # set to (T), perform_classification_with_label is set to (T) automatically and
 # clasification will be done on labelled data.
-perform_classification_with_label = F
+perform_classification_with_label = T
 
 if not(perform_classification_with_label) :
     use_single_U = True
@@ -70,13 +70,13 @@ if use_single_U :
     U = 4
 else :
     # Potential energy 1 
-    U1 = 5
+    U1 = 4
     # Potential energy 2
-    U2 = 16
+    U2 = 20
 
 # System size
 #   number of spin in each of the cube dimension
-n_x = 4
+n_x = 8
 #   number of imaginary time dimension
 L = 200
 #   Volume of tesseract
@@ -86,7 +86,7 @@ V4d = L*(n_x)**3
 # Tc = 0.36
 
 # Number of data per file
-ndata_per_temp = 1000
+ndata_per_temp = 500
 
 # Number of classification data (raw unlabelled data) to be used for classification. 
 classification_data_per_temp = 500
@@ -215,9 +215,10 @@ else :
 # Neural network architecture settings -----------------------------------------------
 
 # Feature extraction layer(s)
-n_feature_map1 = 32
-n_feature_map2 = 16
-n_feature_map3 = 8
+n_feature_map1 = 54
+n_feature_map2 = 26
+n_feature_map3 = 14
+n_feature_map4 = 64
 
 # Classification layer
 n_fully_connected_neuron = 8
@@ -419,22 +420,25 @@ x_image = tf.reshape(x, [-1,n_x,n_x,n_x,L])
 # Then convolve x_image with the weight tensor, add the bias, apply the
 # ReLU function. Zero padding is used in conv3d, i.e. padding = 'SAME',
 # the output size : n_feature_map1 x n_x x n_x x n_x
-h_conv1 = tf.nn.relu(conv3d(x_image, W_conv1, pad='SAME') + b_conv1)
-
+h_conv1 = tf.nn.relu(conv3d(x_image, W_conv1, pad='VALID') + b_conv1)
 
 # Second Convolution Layer
 W_conv2 = weight_variable([filter_d,filter_h,filter_w,n_feature_map1,n_feature_map2])
 b_conv2 = bias_variable([n_feature_map2])
 
-h_conv2 = tf.nn.relu(conv3d(h_conv1, W_conv2, pad='SAME') + b_conv2)
-
+h_conv2 = tf.nn.relu(conv3d(h_conv1, W_conv2, pad='VALID') + b_conv2)
 
 # Third Convolution Layer
 W_conv3 = weight_variable([filter_d,filter_h,filter_w,n_feature_map2,n_feature_map3])
 b_conv3 = bias_variable([n_feature_map3])
 
-h_conv3 = tf.nn.relu(conv3d(h_conv2, W_conv3, pad='SAME') + b_conv3)
+h_conv3 = tf.nn.relu(conv3d(h_conv2, W_conv3, pad='VALID') + b_conv3)
 
+# Fourth Convolution Layer
+W_conv4 = weight_variable([filter_d,filter_h,filter_w,n_feature_map3,n_feature_map4])
+b_conv4 = bias_variable([n_feature_map4])
+
+h_conv4 = tf.nn.relu(conv3d(h_conv3, W_conv4, pad='VALID') + b_conv4)
 
 # Classification layer ---------------------------------------------------------------
 
@@ -443,10 +447,10 @@ h_conv3 = tf.nn.relu(conv3d(h_conv2, W_conv3, pad='SAME') + b_conv3)
 # allow processing on the entire image. The tensor from the previous layer
 # is reshaped into a batch of vectors, multiply by a weight matrix, add a
 # bias, and apply a ReLU.
-W_fc1 = weight_variable([n_feature_map3*(n_x)**3, n_fully_connected_neuron])
+W_fc1 = weight_variable([n_feature_map4*(n_x/2)**3, n_fully_connected_neuron])
 b_fc1 = bias_variable([n_fully_connected_neuron])
 
-h_conv1_flat = tf.reshape(h_conv3, [-1, n_feature_map3*(n_x)**3])
+h_conv1_flat = tf.reshape(h_conv4, [-1, n_feature_map4*(n_x/2)**3])
 h_fc1 = tf.nn.relu(tf.matmul(h_conv1_flat, W_fc1) + b_fc1)
 
 
@@ -536,7 +540,7 @@ if train_neural_network :
 
     if file_exist :
       print 'Continue training using %s.' % filename_trained_model.replace('./','')
-      saver = tf.train.Saver([W_conv1, b_conv1, W_conv2, b_conv2, W_conv3, b_conv3, W_fc1, b_fc1, W_fc2, b_fc2])
+      saver = tf.train.Saver([W_conv1, b_conv1, W_conv2, b_conv2, W_conv3, b_conv3, W_conv4, b_conv4, W_fc1, b_fc1, W_fc2, b_fc2])
       # Restore trained model.
       save_path = saver.restore(sess, filename_trained_model)
 
@@ -572,6 +576,10 @@ if train_neural_network :
     # Break out of the training epoch loop if overtraining is encountered.
     if Overtraining :
       break
+    if best_test_accuracy <= 0.6 and j >= 4 :
+      slow_learning = True
+      print 'Slow learning. Exiting...'
+      break
     for i in range(iteration_per_epoch):
       batch = HSF.train.next_batch(batch_size)
       if i%100 == 0:
@@ -594,7 +602,7 @@ if train_neural_network :
           best_test_accuracy = test_accuracy
           # Save the best model thus far if the above two criteria are met.
           print 'Saving model %s and measurements %s.' % ((filename_weight_bias%(best_test_accuracy*100)).replace('./',''), (filename_measure%(best_test_accuracy*100)).replace('./',''))
-          saver = tf.train.Saver([W_conv1, b_conv1, W_conv2, b_conv2, W_conv3, b_conv3, W_fc1, b_fc1, W_fc2, b_fc2])
+          saver = tf.train.Saver([W_conv1, b_conv1, W_conv2, b_conv2, W_conv3, b_conv3, W_conv4, b_conv4, W_fc1, b_fc1, W_fc2, b_fc2])
           best_epoch = (n+1)*fractional_epoch
           if file_save_counter == 0 :
             filename_weight_bias_tmp = (filename_weight_bias%(best_test_accuracy*100))
@@ -658,7 +666,7 @@ if train_neural_network :
         # Update the best test accuracy
         best_test_accuracy = test_accuracy
         print 'Saving model and measurements...'
-        saver = tf.train.Saver([W_conv1, b_conv1, W_conv2, b_conv2, W_conv3, b_conv3, W_fc1, b_fc1, W_fc2, b_fc2])
+        saver = tf.train.Saver([W_conv1, b_conv1, W_conv2, b_conv2, W_conv3, b_conv3, W_conv4, b_conv4, W_fc1, b_fc1, W_fc2, b_fc2])
         check_model = tf.reduce_mean(W_conv1).eval()
 
         best_epoch = ndata_collect*fractional_epoch
@@ -706,7 +714,7 @@ if train_neural_network :
 # Classification ---------------------------------------------------------------------
 
 else :
-  saver = tf.train.Saver([W_conv1, b_conv1, W_conv2, b_conv2, W_conv3, b_conv3, W_fc1, b_fc1, W_fc2, b_fc2])
+  saver = tf.train.Saver([W_conv1, b_conv1, W_conv2, b_conv2, W_conv3, b_conv3, W_conv4, b_conv4, W_fc1, b_fc1, W_fc2, b_fc2])
   # To proceed, load the trained model.
   saver.restore(sess, filename_trained_model)
   model_saving_criteria_not_met = False
