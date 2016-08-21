@@ -18,7 +18,7 @@ T, F = True, False
 NNetwork = 'CNN0f'
 
 # Trained model
-filename_trained_model = "./20160817-2343_model_U5+U16_CNN0f_test_acc_88.2.ckpt"
+filename_trained_model = "./20160819-1545_model_U16_CNN0f_test_acc_92.1.ckpt"
 name_output_file_by_date_first = T
 
 sess = tf.InteractiveSession()
@@ -67,7 +67,7 @@ if not(perform_classification_with_label) :
 
 if use_single_U :
     # Potential energy
-    U = 4
+    U = 16
 else :
     # Potential energy 1 
     U1 = 5
@@ -82,6 +82,8 @@ L = 200
 #   Volume of tesseract
 V4d = L*(n_x)**3
 
+Mu = '0' 
+
 # Critical temperature
 # Tc = 0.36
 
@@ -89,7 +91,7 @@ V4d = L*(n_x)**3
 ndata_per_temp = 1000
 
 # Number of classification data (raw unlabelled data) to be used for classification. 
-classification_data_per_temp = 500
+classification_data_per_temp = 1000
 
 # String of current date and time
 dt = datetime.datetime.now()
@@ -101,17 +103,17 @@ filename_info_list = filename_trained_model.rsplit('_',10)
 if use_single_U :
     # Input labelled and shuffled filename for training and performaing classification
     # with labels.
-    filename = './N%dx%dx%d_L%d_U%d_Mu0_T_shuffled' % (n_x,n_x,n_x,L,U) + '_%.2d.dat'
+    filename = './N%dx%dx%d_L%d_U%d_Mu%s_T_shuffled' % (n_x,n_x,n_x,L,U,Mu) + '_%.2d.dat'
 
     # Input raw filename for performing classification without labels.
-    rawdata_filename       = './N%dx%dx%d_L%d_U%d_Mu0_T' % (n_x,n_x,n_x,L,U) + '%s.HSF.stream'
+    rawdata_filename       = './N%dx%dx%d_L%d_U%d_Mu%s_T' % (n_x,n_x,n_x,L,U,Mu) + '%s.HSF.stream'
 else :
     # Input labelled and shuffled filename for training and performaing classification
     # with labels.
     if U1 < U2 :
-        filename = './N%dx%dx%d_L%d_U%d+U%d_Mu0_T_shuffled' % (n_x,n_x,n_x,L,U1,U2) + '_%.2d.dat'
+        filename = './N%dx%dx%d_L%d_U%d+U%d_Mu%s_T_shuffled' % (n_x,n_x,n_x,L,U1,U2,Mu) + '_%.2d.dat'
     else :
-        filename = './N%dx%dx%d_L%d_U%d+U%d_Mu0_T_shuffled' % (n_x,n_x,n_x,L,U2,U1) + '_%.2d.dat'
+        filename = './N%dx%dx%d_L%d_U%d+U%d_Mu%s_T_shuffled' % (n_x,n_x,n_x,L,U2,U1,Mu) + '_%.2d.dat'
 
 if name_output_file_by_date_first == False :
     if use_single_U :
@@ -280,16 +282,16 @@ else :
 if perform_classification_with_label :
   if use_single_U :
     # Get temperature and save them to a file.
-    os.system("ls -l N%dx%dx%d_L%d_U%d_Mu0_T*.HSF.stream | awk '{print $9}' | sed -e s/N%dx%dx%d_L%d_U%d_Mu0_T//g -e s/.HSF.stream//g > dtau.dat" %(n_x,n_x,n_x,L,U,n_x,n_x,n_x,L,U))
+    os.system("ls -l N%dx%dx%d_L%d_U%d_Mu%s_T*.HSF.stream | awk '{print $9}' | sed -e s/N%dx%dx%d_L%d_U%d_Mu%s_T//g -e s/.HSF.stream//g > dtau.dat" %(n_x,n_x,n_x,L,U,Mu,n_x,n_x,n_x,L,U,Mu))
     dtau = np.genfromtxt("dtau.dat")
     os.remove("dtau.dat")
   # Array of shuffled file's file number 
   else :
     # Get temperature and save them to a file.
-    os.system("ls -l N%dx%dx%d_L%d_U%d_Mu0_T*.HSF.stream | awk '{print $9}' | sed -e s/N%dx%dx%d_L%d_U%d_Mu0_T//g -e s/.HSF.stream//g > dtau1.dat" %(n_x,n_x,n_x,L,U1,n_x,n_x,n_x,L,U1))
+    os.system("ls -l N%dx%dx%d_L%d_U%d_Mu%s_T*.HSF.stream | awk '{print $9}' | sed -e s/N%dx%dx%d_L%d_U%d_Mu%s_T//g -e s/.HSF.stream//g > dtau1.dat" %(n_x,n_x,n_x,L,U1,Mu,n_x,n_x,n_x,L,U1,Mu))
     dtau1 = np.genfromtxt("dtau1.dat")
     # Get temperature and save them to a file.
-    os.system("ls -l N%dx%dx%d_L%d_U%d_Mu0_T*.HSF.stream | awk '{print $9}' | sed -e s/N%dx%dx%d_L%d_U%d_Mu0_T//g -e s/.HSF.stream//g > dtau2.dat" %(n_x,n_x,n_x,L,U2,n_x,n_x,n_x,L,U2))
+    os.system("ls -l N%dx%dx%d_L%d_U%d_Mu%s_T*.HSF.stream | awk '{print $9}' | sed -e s/N%dx%dx%d_L%d_U%d_Mu%s_T//g -e s/.HSF.stream//g > dtau2.dat" %(n_x,n_x,n_x,L,U2,Mu,n_x,n_x,n_x,L,U2,Mu))
     dtau2 = np.genfromtxt("dtau2.dat")
     dtau = np.hstack((dtau1,dtau2))
     os.remove("dtau1.dat")
@@ -310,9 +312,9 @@ if perform_classification_with_label :
   # in the insert_file_info() module above.
   HSF = HSF.categorize_data()
 
-elif perform_classification_with_label == False :
+elif not(perform_classification_with_label) :
   # Get temperature and save them to a file.
-  os.system("ls -l N%dx%dx%d_L%d_U%d_Mu0_T*.HSF.stream | awk '{print $9}' | sed -e s/N%dx%dx%d_L%d_U%d_Mu0_T//g -e s/.HSF.stream//g > dtau.dat" %(n_x,n_x,n_x,L,U,n_x,n_x,n_x,L,U))
+  os.system("ls -l N%dx%dx%d_L%d_U%d_Mu%s_T*.HSF.stream | awk '{print $9}' | sed -e s/N%dx%dx%d_L%d_U%d_Mu%s_T//g -e s/.HSF.stream//g > dtau.dat" %(n_x,n_x,n_x,L,U,Mu,n_x,n_x,n_x,L,U,Mu))
   # Load temperature into a list of string
   dtau = np.genfromtxt("dtau.dat",dtype='str')
   os.remove("dtau.dat")
@@ -320,8 +322,8 @@ elif perform_classification_with_label == False :
   # to be loaded.
   sh = ndata_per_temp  - classification_data_per_temp
   while ( ndata_per_temp - sh - classification_data_per_temp ) < 0 :
-    print 'Sum of classification data per temperature and the number of lines skip at the beginning of the file must be equal to number of data per temnperature.'
-    print 'Number of data per temnperature                  : %d' % ndata_per_temp
+    print 'Sum of classification data per temperature and the number of lines skip at the beginning of the file must be equal to number of data per temperature.'
+    print 'Number of data per temperature                   : %d' % ndata_per_temp
     print 'Classification data used per temperature         : %d' % classification_data_per_temp
     print 'Number of lines skip at the beginning of the file: %d' % sh
     classification_data_per_temp = input('Input new classification data used per temperature: ')
