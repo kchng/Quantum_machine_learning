@@ -112,6 +112,8 @@ class optimise_hyperparameters :
 
         use_single_U = self.use_single_U
 
+        print "(Conv + ReLu) 1: %d, (Conv + ReLu) 2: %d, (Conv + ReLu) 3: %d, fc 1: %d" %(n_feature_map1, n_feature_map2, n_feature_map3, n_fully_connected_neuron)
+
         # Number of training epoch
         epochs = 500
         # Size of training batch
@@ -470,6 +472,10 @@ class optimise_hyperparameters :
                 Overtraining = False
               n += 1
             train_step.run(feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
+          if test_accuracy <= 0.55 and n*fractional_epoch >= 12 :
+            slow_learning = True
+            print 'Slow learning. Exiting...'
+            break
 
         if not(Overtraining) :
           # Final check to save the best model.
