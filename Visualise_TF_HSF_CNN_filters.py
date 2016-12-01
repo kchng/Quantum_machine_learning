@@ -4,6 +4,30 @@ import numpy as np
 import sys
 import time
 
+############################################### User control area ###############################################
+
+# Note: If you would like to look at the filters in the 3D convolutional layers, change three_dimensions to True
+# or other to False if you would like to look at the weights in the fully-connected layers instead.
+three_dimensions=True
+# Make sure you place all of the filter files in the same directory and key-in the absolute file path here. Use
+# the asterisk symbol * appropriate so that all of the relevant files will be loaded. This is so that all of the
+# values will be normalized by the greatest value.
+# Windows
+# Absolute_file_pathv = "C:\\Users\\phoni\\Desktop\\20160827-1803_model_U5+U16_CNN0i_test_acc_87.9_W_*.dat"
+# MacOS
+# Absolute_file_path = "/Users/kelvinchng/Desktop/20160827-1803_model_U5+U16_CNN0i_test_acc_87.9_W_*.dat"
+# Linux
+Absolute_file_path = "/home/kelvin/Desktop/HSF Tensor Flow/Blender/20160819-1545_model_U16_CNN0f_test_acc_92.1_W_*.dat"
+all_data_filenames = glob.glob(Absolute_file_path)
+
+# Give the layer index that you want to look at.
+# For N = 4**3, there are 3 convolutional layers and make sure three_dimensions is set to True and there are two
+# fully-connected layers and make sure to set three_dimensions to False. For N = 8**3, there are 4 convolutional
+# layers and 2 fullly-connected layers.
+ith_filter_layer_to_draw = 3
+
+#################################################################################################################
+
 def makeMaterial(name, diffuse, specular=(1,1,1), alpha=1, transparent=False, transparency=0.5):
     mat = bpy.data.materials.new(name)
     mat.diffuse_color = diffuse
@@ -65,20 +89,6 @@ def generate_neuron_position(n_feature_to_map, delta_position) :
 
 ################################################ End of Function ################################################
 
-# Note: If you would like to look at the filters in the 3D convolutional layers, change three_dimensions to True
-# or other to False if you would like to look at the weights in the fully-connected layers instead.
-three_dimensions=True
-# Make sure you place all of the filter files in the same directory and key-in the absolute file path here. Use
-# the asterisk symbol * appropriate so that all of the relevant files will be loaded. This is so that all of the
-# values will be normalized by the greatest value.
-# Windows
-# Absolute_file_pathv = "C:\\Users\\phoni\\Desktop\\20160827-1803_model_U5+U16_CNN0i_test_acc_87.9_W_*.dat"
-# MacOS
-# Absolute_file_path = "/Users/kelvinchng/Desktop/20160827-1803_model_U5+U16_CNN0i_test_acc_87.9_W_*.dat"
-# Linux
-Absolute_file_path = "/home/kelvin/Desktop/HSF Tensor Flow/Blender/20160819-1545_model_U16_CNN0f_test_acc_92.1_W_*.dat"
-all_data_filenames = glob.glob(Absolute_file_path)
-
 # Find the maximum and minimum values in the filter
 W_mag_max = []
 W_mag_min = []
@@ -99,12 +109,9 @@ filter_w = filter_d
 
 # Size of cube
 cube_size = 0.5
-         
-# Read data
-W_conv1 = np.loadtxt(all_data_filenames[2])
 
-print(all_data_filenames)
-print(np.shape(W_conv1))
+# Read data
+W_conv1 = np.loadtxt(all_data_filenames[ith_filter_layer_to_draw-1])
 
 # Find the largest weight magnitude
 W_mag_max = np.array([max(W_mag_max),np.abs(min(W_mag_min))]).max()
