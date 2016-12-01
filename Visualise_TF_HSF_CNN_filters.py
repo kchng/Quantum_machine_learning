@@ -44,12 +44,12 @@ def makecubes(ncube, cube_size, positions_x, positions_y, positions_z, input_con
                         
                         add_cube(location=(loc_x,loc_y,loc_z))
                         bpy.context.object.scale = (cube_scale,cube_scale,cube_scale)
-                        if input_configurations[n] > 0 :
+                        if input_configurations[n] < 0 :
                             # If the weight value is negative, colour it red
-                            setMaterial(bpy.context.object, makeMaterial('Red', (1-input_configurations[n],0,0)))
-                            # If the weight value is positive, colour it blue
+                            setMaterial(bpy.context.object, makeMaterial('Red', (1,-input_configurations[n],-input_configurations[n])))
                         else :
-                            setMaterial(bpy.context.object, makeMaterial('Blue', (0,0,1+input_configurations[n])))
+                            # If the weight value is positive, colour it blue
+                            setMaterial(bpy.context.object, makeMaterial('Blue', (input_configurations[n],input_configurations[n],1)))
                         n += 1
                                       
 def generate_neuron_position(n_feature_to_map, delta_position) :
@@ -65,12 +65,19 @@ def generate_neuron_position(n_feature_to_map, delta_position) :
 
 ################################################ End of Function ################################################
 
+# Note: If you would like to look at the filters in the 3D convolutional layers, change three_dimensions to True
+# or other to False if you would like to look at the weights in the fully-connected layers instead.
 three_dimensions=True
-#input_data_filename = "C:\\Users\\phoni\\Desktop\\20160827-1803_model_U5+U16_CNN0i_test_acc_87.9_W_conv1.dat"
-#input_data_filename = "/home/kelvin/Desktop/HSF Tensor Flow/Blender/20160827-1803_model_U5+U16_CNN0i_test_acc_87.9_W_conv4.dat"
-#all_data_filenames = glob.glob("/Users/kelvinchng/Desktop/20160827-1803_model_U5+U16_CNN0i_test_acc_87.9_W_*.dat")
-all_data_filenames = glob.glob("/home/kelvin/Desktop/HSF Tensor Flow/Blender/20160819-1545_model_U16_CNN0f_test_acc_92.1_W_*.dat")
-
+# Make sure you place all of the filter files in the same directory and key-in the absolute file path here. Use
+# the asterisk symbol * appropriate so that all of the relevant files will be loaded. This is so that all of the
+# values will be normalized by the greatest value.
+# Windows
+# Absolute_file_pathv = "C:\\Users\\phoni\\Desktop\\20160827-1803_model_U5+U16_CNN0i_test_acc_87.9_W_*.dat"
+# MacOS
+# Absolute_file_path = "/Users/kelvinchng/Desktop/20160827-1803_model_U5+U16_CNN0i_test_acc_87.9_W_*.dat"
+# Linux
+Absolute_file_path = "/home/kelvin/Desktop/HSF Tensor Flow/Blender/20160819-1545_model_U16_CNN0f_test_acc_92.1_W_*.dat"
+all_data_filenames = glob.glob(Absolute_file_path)
 
 # Find the maximum and minimum values in the filter
 W_mag_max = []
