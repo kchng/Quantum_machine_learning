@@ -65,10 +65,12 @@ def generate_neuron_position(n_feature_to_map, delta_position) :
 
 ################################################ End of Function ################################################
 
-three_dimensions=False
+three_dimensions=True
 #input_data_filename = "C:\\Users\\phoni\\Desktop\\20160827-1803_model_U5+U16_CNN0i_test_acc_87.9_W_conv1.dat"
 #input_data_filename = "/home/kelvin/Desktop/HSF Tensor Flow/Blender/20160827-1803_model_U5+U16_CNN0i_test_acc_87.9_W_conv4.dat"
-all_data_filenames = glob.glob("/Users/kelvinchng/Desktop/20160827-1803_model_U5+U16_CNN0i_test_acc_87.9_W_*.dat")
+#all_data_filenames = glob.glob("/Users/kelvinchng/Desktop/20160827-1803_model_U5+U16_CNN0i_test_acc_87.9_W_*.dat")
+all_data_filenames = glob.glob("/home/kelvin/Desktop/HSF Tensor Flow/Blender/20160819-1545_model_U16_CNN0f_test_acc_92.1_W_*.dat")
+
 
 # Find the maximum and minimum values in the filter
 W_mag_max = []
@@ -92,9 +94,10 @@ filter_w = filter_d
 cube_size = 0.5
          
 # Read data
-W_conv1 = np.loadtxt(all_data_filenames[-1])[:6,:10]
+W_conv1 = np.loadtxt(all_data_filenames[2])
 
-print(W_conv1)
+print(all_data_filenames)
+print(np.shape(W_conv1))
 
 # Find the largest weight magnitude
 W_mag_max = np.array([max(W_mag_max),np.abs(min(W_mag_min))]).max()
@@ -120,10 +123,6 @@ y_conv1 = generate_neuron_position(n_y_cube, delta_x_cube)
 z_conv1 = -generate_neuron_position(n_z_cube, delta_x_cube)
 # x position of the cubes
 x_conv1 = np.zeros(np.shape(y_conv1))+delta_x_layer
-
-print(y_conv1)
-print(z_conv1)
-print(x_conv1)
 
 W_conv1 = np.reshape(W_conv1.T,(np.prod(np.array(np.shape(W_conv1))),1))
 
