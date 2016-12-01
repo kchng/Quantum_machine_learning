@@ -87,7 +87,7 @@ for i in range(len(all_data_filenames)) :
     W_mag_max.append(data_tmp.max())
     W_mag_min.append(data_tmp.min())
 
-# Delete the initial cube
+# Delete all the cubes
 for ob in bpy.context.scene.objects:
     ob.select = ob.type == 'MESH' and ob.name.startswith("Cube")
 bpy.ops.object.delete()
