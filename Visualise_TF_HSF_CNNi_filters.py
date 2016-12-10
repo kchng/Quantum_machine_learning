@@ -18,16 +18,16 @@ three_dimensions=True
 # Absolute_file_path = "/Users/kelvinchng/Desktop/20160827-1803_model_U5+U16_CNN0i_test_acc_87.9_W_*.dat"
 # Linux
 Absolute_file_path = "/home/kelvin/Desktop/HSF Tensor Flow/Blender/20160819-1545_model_U16_CNN0f_test_acc_92.1_W_*.dat"
-Absolute_file_path = "/Users/kelvinchng/Desktop/20160814-2323_model_U5_CNN0f_test_acc_84.6_W_*.dat"
-Absolute_file_path = "/Users/kelvinchng/Desktop/20160819-1545_model_U16_CNN0f_test_acc_92.1_W_*.dat"
-all_data_filenames = glob.glob(Absolute_file_path)
-#print(all_data_filenames)
+Absolute_file_path1 = "/Users/kelvinchng/Desktop/20160814-2323_model_U5_CNN0f_test_acc_84.6_W_*.dat"
+Absolute_file_path2 = "/Users/kelvinchng/Desktop/20160819-1545_model_U16_CNN0f_test_acc_92.1_W_*.dat"
+all_data_filenames = glob.glob(Absolute_file_path1)
+
 
 # Give the layer index that you want to look at.
 # For N = 4**3, there are 3 convolutional layers and make sure three_dimensions is set to True and there are two
 # fully-connected layers and make sure to set three_dimensions to False. For N = 8**3, there are 4 convolutional
 # layers and 2 fullly-connected layers.
-ith_filter_layer_to_draw = 6
+ith_filter_layer_to_draw = 2
 
 #################################################################################################################
 
@@ -60,7 +60,7 @@ def makecubes(ncube, cube_size, positions_x, positions_y, positions_z, input_con
     else :
         ncube = 1
         offset = 0
-    nn = 800
+    nn = 4096
     for m in range(len(positions_z)) :
         for l in range(len(positions_x)) :
             for k in range(ncube) :
@@ -101,17 +101,22 @@ def generate_neuron_position(n_feature_to_map, delta_position) :
     # return position of the cubes in an array
     return np.arange(-end_pos,end_pos+delta_position,delta_position)
 
+def Find_max_val(absolute_file_path1,absolute_file_path2) :
+    data_filenames = glob.glob(Absolute_file_path1) + glob.glob(Absolute_file_path2)
+
+    # Find the maximum and minimum values in the filter
+    W_mag_max = []
+    for i in range(len(data_filenames)) :
+        data_tmp = np.loadtxt(data_filenames[i])
+        W_mag_max.append(abs(data_tmp).max())
+
+    print('Global maximum value:', max(W_mag_max))
+    return max(W_mag_max)
+
 def deg_to_rad( deg ):
     return deg*np.pi/180
 
 ################################################ End of Function ################################################
-
-# Find the maximum and minimum values in the filter
-W_mag_max = []
-for i in range(len(all_data_filenames)) :
-    data_tmp = np.loadtxt(all_data_filenames[i])
-    print(i,abs(data_tmp).max())
-    W_mag_max.append(abs(data_tmp).max())
 
 # Delete all the cubes
 for ob in bpy.context.scene.objects:
@@ -132,14 +137,18 @@ cube_size = 0.5
 # Read data
 W_conv1 = np.loadtxt(all_data_filenames[ith_filter_layer_to_draw-1])
 
+print('Current layer maximum value:', W_conv1.max())
+
 # Plot the first 100 largest filters
 W_conv1 = np.reshape(W_conv1.T.ravel()[:800],(10,80)).T
 
-# Find the largest weight magnitude
-W_mag_max = max(W_mag_max)
+# Find the maximum and minimum values in the filter
+W_mag_max = Find_max_val(Absolute_file_path1,Absolute_file_path2)
 
 # Normalise data
 W_conv1 = W_conv1/W_mag_max
+
+print('Normalised current layer maximum value:', W_conv1.max())
 
 n_row, n_col = np.shape(W_conv1)
 if three_dimensions :
