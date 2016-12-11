@@ -27,7 +27,7 @@ all_data_filenames = glob.glob(Absolute_file_path1)
 # For N = 4**3, there are 3 convolutional layers and make sure three_dimensions is set to True and there are two
 # fully-connected layers and make sure to set three_dimensions to False. For N = 8**3, there are 4 convolutional
 # layers and 2 fullly-connected layers.
-ith_filter_layer_to_draw = 2
+ith_filter_layer_to_draw = 7
 
 #################################################################################################################
 
