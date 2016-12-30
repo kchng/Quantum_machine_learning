@@ -32,7 +32,7 @@ class insert_file_info :
     class DataSet(object) :
         file_info = None
     
-        def __init__(self, images, labels, temps, nrows, nfile_train, 
+        def __init__(self, images, labels, temps, signs, nrows, nfile_train, 
                      nfile_test, nfile_val, full_file_path, data_type) :
             #self.file_into = insert_file_info()
         
@@ -47,6 +47,7 @@ class insert_file_info :
             self._labels = labels
             self._ndata = 0
             self._temps = temps
+            self._signs = signs
             self.batch_size = 0
             self.data_type = data_type
             self.full_file_path = full_file_path
@@ -89,6 +90,10 @@ class insert_file_info :
         @property
         def temps(self):
             return self._temps
+
+        @property
+        def signs(self):
+            return self._signs
 
         @property
         def ndata(self):
@@ -233,7 +238,7 @@ class insert_file_info :
 
             return self._images, self._labels
 
-    def categorize_data(self, convert_test_labels_to_one_hot = True) :
+    def categorize_data(self, convert_test_labels_to_one_hot = True, make_spin_down_negative = False) :
         class DataSets(object):
             pass
         data_sets = DataSets()
@@ -243,7 +248,25 @@ class insert_file_info :
             for i in range(len(label)) :
                 label_one_hot[i,label[i]] = 1
             return label_one_hot
-        
+
+        def reindex_data( in_data, L=200 ) :
+
+            nrows, ncols = data_shape = np.shape(in_data)
+            n_x = int(round((float(ncols)/L)**(1/3.)))
+            index = range(ncols)
+            new_index = np.zeros(ncols)
+            count=0
+
+            for j in range(L) :
+                 for i in range(n_x**3) :
+                    new_index[count] = index[j+i*L]
+                    count+=1
+            output_data = np.zeros(np.shape(in_data))
+            for i in range(ncols) :
+                output_data[:,int(new_index[i])] = in_data[:,i]
+
+            return output_data
+ 
         data = np.loadtxt(self.full_file_path%1)
         self.nrows, self.ncols = np.shape(data)
         self.nrows, self.ncols = int(self.nrows), int(self.ncols)
@@ -280,10 +303,13 @@ class insert_file_info :
             for i in range(nfile_train) :
                 print '%.1fs. Loading file %d.' % (time.time()-start_time, i+1)
                 TRAIN_DATA[i*self.nrows:(i+1)*self.nrows,:] = np.loadtxt(self.full_file_path%(i+1))
-            train_images = TRAIN_DATA[:,:-2].astype('int')
+            train_images = reindex_data(TRAIN_DATA[:,:-2]).astype('int')
+            if make_spin_down_negative :
+                train_images[train_images==0] = -1
             train_labels = TRAIN_DATA[:,-2].astype('int')
             train_labels = convert_to_one_hot(train_labels)
-            train_temps = []        
+            train_temps = []
+            train_signs = []
 
         print 'Loading %d/%d files for test data...' % (nfile_test,self.nfile)
         TEST_DATA = np.zeros((nfile_test*self.nrows,self.ncols))
@@ -292,11 +318,14 @@ class insert_file_info :
         for i in range(nfile_test) :
             print '%.1fs. Loading file %d.' % (time.time()-start_time, i+1)
             TEST_DATA[i*self.nrows:(i+1)*self.nrows,:] = np.loadtxt(self.full_file_path%(i+1+nfile_train))
-        test_images = TEST_DATA[:,:-2].astype('int')
+        test_images = reindex_data(TEST_DATA[:,:-2]).astype('int')
+        if make_spin_down_negative :
+            test_images[test_images==0] = -1
         test_labels = TEST_DATA[:,-2].astype('int')
         if convert_test_labels_to_one_hot :
             test_labels = convert_to_one_hot(test_labels)
         test_temps  = TEST_DATA[:,-1].astype('int')    
+        test_signs  = []
 
         if self.include_validation_data :
             print 'Loading %d/%d files for validation data...' % (nfile_val,self.nfile)
@@ -306,21 +335,25 @@ class insert_file_info :
             for i in range(nfile_test) :
                 print '%.1fs. Loading file %d.' % (time.time()-start_time, i+1)
                 VALIDATION_DATA[i*self.nrows:(i+1)*self.nrows,:] = np.loadtxt(self.full_file_path%(i+1+nfile_train+nfile_test))
-            validation_images = VALIDATION_DATA[:,:-2].astype('int')
+            validation_images = reindex_data(VALIDATION_DATA[:,:-2]).astype('int')
+            if make_spin_down_negative :
+                validation_images[validation_images==0] = -1
             validation_labels = VALIDATION_DATA[:,-2].astype('int')
             validation_temps  = VALIDATION_DATA[:,-1].astype('int')
+            validation_signs  = []
 
         if not(self.load_test_data_only) :
             data_sets.train      = insert_file_info.DataSet(train_images, train_labels,
-                                   train_temps, self.nrows, nfile_train, nfile_test, 
-                                   nfile_val, self.full_file_path, data_type = 'train')
+                                   train_temps, train_signs, self.nrows, nfile_train, 
+                                   nfile_test, nfile_val, self.full_file_path, 
+                                   data_type = 'train')
         data_sets.test           = insert_file_info.DataSet(test_images, test_labels,
-                                   test_temps, self.nrows, nfile_train, nfile_test, 
-                                   nfile_val, self.full_file_path, data_type = 'test')
+                                   test_temps, test_signs, self.nrows, nfile_train,
+                                   nfile_test, nfile_val, self.full_file_path, data_type = 'test')
         if self.include_validation_data :
             data_sets.validation = insert_file_info.DataSet(validation_images,
-                                   validation_labels, validation_temps, self.nrows, 
-                                   nfile_train, nfile_test, nfile_val, 
+                                   validation_labels, validation_temps, validation_signs, 
+                                   self.nrows, nfile_train, nfile_test, nfile_val, 
                                    self.full_file_path, data_type = 'validation')
 
         return data_sets
@@ -360,6 +393,7 @@ class insert_file_info :
             train_images = np.array([]).astype('int')
             train_labels = np.array([]).astype('int')
             train_temps = []
+            train_signs = []
 
         start_time = time.time()
 
@@ -370,11 +404,12 @@ class insert_file_info :
         for i in range(nfile_test) :
             print '%.1fs. Loading file %d.' % (time.time()-start_time, i+1)
             TEST_DATA[i*self.nrows:(i+1)*self.nrows,:] = np.loadtxt(self.full_file_path%(i+1+nfile_train))
-        test_images = TEST_DATA[:,:-2].astype('int')
+        test_images = reindex_data(TEST_DATA[:,:-2]).astype('int')
         test_labels = TEST_DATA[:,-2].astype('int')
         if convert_test_labels_to_one_hot :
             test_labels = convert_to_one_hot(test_labels)
         test_temps  = TEST_DATA[:,-1].astype('int')
+        test_signs  = []
 
         if self.include_validation_data :
             print 'Loading %d/%d files for validation data...' % (nfile_val,self.nfile)
@@ -384,9 +419,10 @@ class insert_file_info :
             for i in range(nfile_test) :
                 print '%.1fs. Loading file %d.' % (time.time()-start_time, i+1)
                 VALIDATION_DATA[i*self.nrows:(i+1)*self.nrows,:] = np.loadtxt(self.full_file_path%(i+1+nfile_train+nfile_test))
-            validation_images = VALIDATION_DATA[:,:-2].astype('int')
+            validation_images = reindex_data(VALIDATION_DATA[:,:-2]).astype('int')
             validation_labels = VALIDATION_DATA[:,-2].astype('int')
             validation_temps  = VALIDATION_DATA[:,-1].astype('int')
+            validation_signs  = []
 
         #test_images = np.array([]).astype('int')
         #test_labels = np.array([]).astype('int') 
@@ -399,32 +435,52 @@ class insert_file_info :
 
         if not(self.load_test_data_only) :
             data_sets.train      = insert_file_info.DataSet(train_images, train_labels,
-                                   train_temps, self.nrows, nfile_train, nfile_test, 
-                                   nfile_val, self.full_file_path, data_type = 'train')
+                                   train_temps, train_signs, self.nrows, nfile_train,
+                                   nfile_test, nfile_val, self.full_file_path,
+                                   data_type = 'train')
         data_sets.test           = insert_file_info.DataSet(test_images, test_labels,
-                                   test_temps, self.nrows, nfile_train, nfile_test, 
-                                   nfile_val, self.full_file_path, data_type = 'test')
+                                   test_temps, test_signs, self.nrows, nfile_train,
+                                   nfile_test, nfile_val, self.full_file_path,
+                                    data_type = 'test')
         if self.include_validation_data :
             data_sets.validation = insert_file_info.DataSet(validation_images,
-                                   validation_labels, validation_temps, self.nrows, 
-                                   nfile_train, nfile_test, nfile_val, 
+                                   validation_labels, validation_temps, validation_signs, 
+                                   self.nrows,  nfile_train, nfile_test, nfile_val, 
                                    self.full_file_path, data_type = 'validation')
 
         return data_sets
 
-    def load_classification_data(self, nrows = 1000, ncols=12800, SkipHeader = 0, load_ndata_per_file = 1000) :
+    def load_classification_data(self, nrows = 1000, ncols=12800, SkipHeader = 0, load_ndata_per_file = 1000, include_sign=False, make_spin_down_negative = False) :
         class DataSets(object):
             pass
-        data_sets = DataSets()       
- 
+        data_sets = DataSets()
+
+        def reindex_data( in_data, L=200 ) :
+
+            nrows, ncols = data_shape = np.shape(in_data)
+            n_x = int(round((float(ncols)/L)**(1/3.)))
+            index = range(ncols)
+            new_index = np.zeros(ncols)
+            count=0
+
+            for j in range(L) :
+                 for i in range(n_x**3) :
+                    new_index[count] = index[j+i*L]
+                    count+=1
+            output_data = np.zeros(np.shape(in_data))
+            for i in range(ncols) :
+                output_data[:,int(new_index[i])] = in_data[:,i]
+
+            return output_data
+
         start_time = time.time()
 
         self.ncols            = ncols
         self.nrows            = nrows
         self.delimiter        = [1 for i in xrange(self.ncols)]
 
-        if SkipHeader == 0 :
-            load_ndata_per_file = self.nrows
+        #if SkipHeader == 0 :
+        #    load_ndata_per_file = self.nrows
         SkipFooter = self.nrows - SkipHeader - load_ndata_per_file
 
         while load_ndata_per_file > self.nrows :
@@ -432,18 +488,27 @@ class insert_file_info :
             print 'Number of data per temnperature         : %d' % self.nrows
             print 'Classification data used per temperature: %d' % load_ndata_per_file
             load_ndata_per_file = input('Input new classification data used per temperature: ')
-     
+
         classification_images = np.zeros((self.nfile*load_ndata_per_file,self.ncols))
         print 'Loading %d files for classfication data...' % (self.nfile)
         for i in range(self.nfile) :
             print '%.1fs. Loading file %d.' % (time.time()-start_time, i+1)
             classification_images[i*load_ndata_per_file:(i+1)*load_ndata_per_file,:] = np.genfromtxt(self.full_file_path%self.filenumber[i], dtype = int, delimiter=self.delimiter, skip_header=SkipHeader, skip_footer=SkipFooter)
-        classification_images = classification_images.astype('int')
+        classification_images = reindex_data(classification_images).astype('int')
+        if make_spin_down_negative :
+            classification_images[classification_images==0] = -1
         classification_labels = []
         classification_temps  = []
 
-        data_sets.classification = insert_file_info.DataSet(classification_images, classification_labels, 
-                                   classification_temps, 0, 0, 0, 0, self.full_file_path, 
+        if include_sign :
+            classification_signs = np.zeros(self.ncols)
+            for i in range(self.nfile) :
+                classification_signs[i*load_ndata_per_file:(i+1)*load_ndata_per_file] = np.loadtxt(self.full_file_path%self.filenumber[i])[SkipHeader:(self.nrows-SkipFooter),-1]
+        else :
+            classification_signs = []
+
+        data_sets.classification = insert_file_info.DataSet(classification_images, classification_labels,
+                                   classification_temps, classification_signs, 0, 0, 0, 0, self.full_file_path,
                                    data_type='classification')
-        
+
         return data_sets

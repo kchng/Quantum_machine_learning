@@ -11,6 +11,13 @@ import time
 import numpy as np
 import tensorflow as tf
 
+SKIPHEADER_tmp = 0
+print SKIPHEADER_tmp
+
+include_sign = False
+# half filling/ average density of one 
+half_filling = True
+
 # Short form of Boolean value
 T, F = True, False
 
@@ -19,6 +26,8 @@ NNetwork = 'CNN0i'
 
 # Trained model
 filename_trained_model = "./20160820-0843_model_U4+U20_CNN0i_CR154_CR226_CR314_CR418_fc64_test_acc_84.8.ckpt"
+filename_trained_model = "20160820-2248_model_U4+U20_CNN0i_test_acc_90.8.ckpt"
+filename_trained_model = "20160827-1803_model_U5+U16_CNN0i_test_acc_87.9.ckpt"
 name_output_file_by_date_first = T
 
 sess = tf.InteractiveSession()
@@ -31,8 +40,8 @@ sess = tf.InteractiveSession()
 # (T) or it can also be used for performing classification using raw unlabelled
 # data by setting train_neural_network to (F) and perform_classification_with_label
 # to (F).
-train_neural_network = T
-continue_training_using_trained_model = T
+train_neural_network = F
+continue_training_using_trained_model = F
 
 # Select (T) to use one U for training or (F) to use data set with 2 U for training.
 use_single_U = False
@@ -49,7 +58,7 @@ overtraining_threshold = 10
 # to be saved.
 best_test_accuracy = 0.5
 # Maximum number of data file to be used for training and testing.
-Max_nfile = 10
+Max_nfile = 70
 # Offset to the file index (to load)
 File_index_offset = 0
 
@@ -58,7 +67,7 @@ File_index_offset = 0
 # data or (T) to perform classification on raw data. When train_neural_network is
 # set to (T), perform_classification_with_label is set to (T) automatically and
 # clasification will be done on labelled data.
-perform_classification_with_label = T
+perform_classification_with_label = F
 
 if not(perform_classification_with_label) :
     use_single_U = True
@@ -67,12 +76,12 @@ if not(perform_classification_with_label) :
 
 if use_single_U :
     # Potential energy
-    U = 4
+    U = 10
 else :
     # Potential energy 1 
-    U1 = 4
+    U1 = 5
     # Potential energy 2
-    U2 = 20
+    U2 = 16
 
 # System size
 #   number of spin in each of the cube dimension
@@ -82,14 +91,19 @@ L = 200
 #   Volume of tesseract
 V4d = L*(n_x)**3
 
+if half_filling :
+    Mu = '0'
+else :
+    Mu = '0'
+
 # Critical temperature
 # Tc = 0.36
 
 # Number of data per file
-ndata_per_temp = 500
+ndata_per_temp = 1000
 
 # Number of classification data (raw unlabelled data) to be used for classification. 
-classification_data_per_temp = 500
+classification_data_per_temp = 100
 
 # String of current date and time
 dt = datetime.datetime.now()
@@ -101,17 +115,17 @@ filename_info_list = filename_trained_model.rsplit('_',10)
 if use_single_U :
     # Input labelled and shuffled filename for training and performaing classification
     # with labels.
-    filename = './N%dx%dx%d_L%d_U%d_Mu0_T_shuffled' % (n_x,n_x,n_x,L,U) + '_%.2d.dat'
+    filename = './N%dx%dx%d_L%d_U%d_Mu%s_T_shuffled' % (n_x,n_x,n_x,L,U,Mu) + '_%.2d.dat'
 
     # Input raw filename for performing classification without labels.
-    rawdata_filename       = './N%dx%dx%d_L%d_U%d_Mu0_T' % (n_x,n_x,n_x,L,U) + '%s.HSF.stream'
+    rawdata_filename       = './N%dx%dx%d_L%d_U%d_Mu%s_T' % (n_x,n_x,n_x,L,U,Mu) + '%s.HSF.stream'
 else :
     # Input labelled and shuffled filename for training and performaing classification
     # with labels.
     if U1 < U2 :
-        filename = './N%dx%dx%d_L%d_U%d+U%d_Mu0_T_shuffled' % (n_x,n_x,n_x,L,U1,U2) + '_%.2d.dat'
+        filename = './N%dx%dx%d_L%d_U%d+U%d_Mu%s_T_shuffled' % (n_x,n_x,n_x,L,U1,U2,Mu) + '_%.2d.dat'
     else :
-        filename = './N%dx%dx%d_L%d_U%d+U%d_Mu0_T_shuffled' % (n_x,n_x,n_x,L,U2,U1) + '_%.2d.dat'
+        filename = './N%dx%dx%d_L%d_U%d+U%d_Mu%s_T_shuffled' % (n_x,n_x,n_x,L,U2,U1,Mu) + '_%.2d.dat'
 
 if name_output_file_by_date_first == False :
     if use_single_U :
@@ -137,7 +151,10 @@ if name_output_file_by_date_first == False :
             filename_result     = "./result_U%d_" % U + NNetwork + "_trained_using_" + data_used_for_training + "_" + start_date_time + ".dat"
 
             # Output of classification result from raw data (without labels)
-            filename_classified = "./classified_U%d_" % U + NNetwork + "_trained_using_" + data_used_for_training + "_" + start_date_time + ".dat"
+            if half_filling :
+                filename_classified = "./classified_U%d_" % U + NNetwork + "_trained_using_" + data_used_for_training + "_" + start_date_time + ".dat"
+            else :
+                filename_classified = "./classified_U%d_" % U + 'Mu%s_' % Mu + NNetwork + "_trained_using_" + data_used_for_training + "_" + start_date_time + ".dat"
     else :
         # Output model filename
         filename_weight_bias    = "./model_U%d+U%d_" % (U1,U2) + NNetwork + "_test_acc_%.1f_" + start_date_time + ".ckpt"
@@ -179,14 +196,20 @@ else :
                 filename_result = filename_result % test_acc
                 data_used_for_training = filename_info_list[2]
                 # Output of classification result from raw data (without labels)
-                filename_classified = "./" + start_date_time + "_classified_U%d_" % U + NNetwork + "_trained_using_" + data_used_for_training + "_test_acc_%.1f.dat" % test_acc
+                if half_filling :
+                    filename_classified = "./" + start_date_time + "_classified_U%d_" % U + NNetwork + "_trained_using_" + data_used_for_training + "_test_acc_%.1f.dat" % test_acc
+                else :
+                    filename_classified = "./" + start_date_time + "_classified_U%d_" % U + 'Mu%s_' + NNetwork + "_trained_using_" + data_used_for_training + "_test_acc_%.1f.dat" % test_acc
         else :
             data_used_for_training = filename_info_list[2]
             # Output of classification result with labels
             filename_result     = "./" + start_date_time + "_result_U%d_" % U + NNetwork + "_trained_using_" + data_used_for_training + ".dat"
-            
+
             # Output of classification result from raw data (without labels)
-            filename_classified = "./" + start_date_time + "_classified_U%d_" % U + NNetwork + "_trained_using_" + data_used_for_training + ".dat"
+            if half_filling :
+                filename_classified = "./" + start_date_time + "_classified_U%d_" % U + NNetwork + "_trained_using_" + data_used_for_training + ".dat"
+            else :
+                filename_classified = "./" + start_date_time + "_classified_U%d_" % U + 'Mu%s_' % Mu + NNetwork + "_trained_using_" + data_used_for_training + ".dat"
     else :
         # Output model filename
         filename_weight_bias    = "./" + start_date_time + "_model_U%d+U%d_" % (U1,U2) + NNetwork + "_test_acc_%.1f.ckpt"
@@ -218,10 +241,10 @@ else :
 n_feature_map1 = 54
 n_feature_map2 = 26
 n_feature_map3 = 14
-n_feature_map4 = 64
+n_feature_map4 = 18
 
 # Classification layer
-n_fully_connected_neuron = 8
+n_fully_connected_neuron = 64
 n_output_neuron = 2
 
 # Spatial filter size: filter depth, height, and width
@@ -235,8 +258,7 @@ filter_w = filter_d
 eta0 = 1e-3
 
 #   decay rate
-decay_rate = 0.925
-
+decay_rate = 0.825
 
 
 
@@ -281,16 +303,16 @@ else :
 if perform_classification_with_label :
   if use_single_U :
     # Get temperature and save them to a file.
-    os.system("ls -l N%dx%dx%d_L%d_U%d_Mu0_T*.HSF.stream | awk '{print $9}' | sed -e s/N%dx%dx%d_L%d_U%d_Mu0_T//g -e s/.HSF.stream//g > dtau.dat" %(n_x,n_x,n_x,L,U,n_x,n_x,n_x,L,U))
+    os.system("ls -l N%dx%dx%d_L%d_U%d_Mu%s_T*.HSF.stream | awk '{print $9}' | sed -e s/N%dx%dx%d_L%d_U%d_Mu%s_T//g -e s/.HSF.stream//g > dtau.dat" %(n_x,n_x,n_x,L,U,Mu,n_x,n_x,n_x,L,U,Mu))
     dtau = np.genfromtxt("dtau.dat")
     os.remove("dtau.dat")
   # Array of shuffled file's file number 
   else :
     # Get temperature and save them to a file.
-    os.system("ls -l N%dx%dx%d_L%d_U%d_Mu0_T*.HSF.stream | awk '{print $9}' | sed -e s/N%dx%dx%d_L%d_U%d_Mu0_T//g -e s/.HSF.stream//g > dtau1.dat" %(n_x,n_x,n_x,L,U1,n_x,n_x,n_x,L,U1))
+    os.system("ls -l N%dx%dx%d_L%d_U%d_Mu%s_T*.HSF.stream | awk '{print $9}' | sed -e s/N%dx%dx%d_L%d_U%d_Mu%s_T//g -e s/.HSF.stream//g > dtau1.dat" %(n_x,n_x,n_x,L,U1,Mu,n_x,n_x,n_x,L,U1,Mu))
     dtau1 = np.genfromtxt("dtau1.dat")
     # Get temperature and save them to a file.
-    os.system("ls -l N%dx%dx%d_L%d_U%d_Mu0_T*.HSF.stream | awk '{print $9}' | sed -e s/N%dx%dx%d_L%d_U%d_Mu0_T//g -e s/.HSF.stream//g > dtau2.dat" %(n_x,n_x,n_x,L,U2,n_x,n_x,n_x,L,U2))
+    os.system("ls -l N%dx%dx%d_L%d_U%d_Mu%s_T*.HSF.stream | awk '{print $9}' | sed -e s/N%dx%dx%d_L%d_U%d_Mu%s_T//g -e s/.HSF.stream//g > dtau2.dat" %(n_x,n_x,n_x,L,U2,Mu,n_x,n_x,n_x,L,U2,Mu))
     dtau2 = np.genfromtxt("dtau2.dat")
     dtau = np.hstack((dtau1,dtau2))
     os.remove("dtau1.dat")
@@ -309,20 +331,21 @@ if perform_classification_with_label :
   # Load and catogorize data into either training data, test data, validation data, or 
   # all of them. If validation data is needed, set include_validation_data to (T)
   # in the insert_file_info() module above.
-  HSF = HSF.categorize_data()
+  HSF = HSF.categorize_data(make_spin_down_negative=True)
 
-elif perform_classification_with_label == False :
+
+elif not(perform_classification_with_label) :
   # Get temperature and save them to a file.
-  os.system("ls -l N%dx%dx%d_L%d_U%d_Mu0_T*.HSF.stream | awk '{print $9}' | sed -e s/N%dx%dx%d_L%d_U%d_Mu0_T//g -e s/.HSF.stream//g > dtau.dat" %(n_x,n_x,n_x,L,U,n_x,n_x,n_x,L,U))
+  os.system("ls -l N%dx%dx%d_L%d_U%d_Mu%s_T*.HSF.stream | awk '{print $9}' | sed -e s/N%dx%dx%d_L%d_U%d_Mu%s_T//g -e s/.HSF.stream//g > dtau.dat" %(n_x,n_x,n_x,L,U,Mu,n_x,n_x,n_x,L,U,Mu))
   # Load temperature into a list of string
   dtau = np.genfromtxt("dtau.dat",dtype='str')
   os.remove("dtau.dat")
   # The number of lines to skip at the beginning of the file if not all of the data is
   # to be loaded.
-  sh = ndata_per_temp  - classification_data_per_temp
+  sh = SKIPHEADER_tmp #ndata_per_temp  - classification_data_per_temp
   while ( ndata_per_temp - sh - classification_data_per_temp ) < 0 :
-    print 'Sum of classification data per temperature and the number of lines skip at the beginning of the file must be equal to number of data per temnperature.'
-    print 'Number of data per temnperature                  : %d' % ndata_per_temp
+    print 'Sum of classification data per temperature and the number of lines skip at the beginning of the file must be equal to number of data per temperature.'
+    print 'Number of data per temperature                   : %d' % ndata_per_temp
     print 'Classification data used per temperature         : %d' % classification_data_per_temp
     print 'Number of lines skip at the beginning of the file: %d' % sh
     classification_data_per_temp = input('Input new classification data used per temperature: ')
@@ -330,8 +353,10 @@ elif perform_classification_with_label == False :
   # Provide file information to the data_reader module.
   HSF = data_reader.insert_file_info(rawdata_filename,dtau)
   # Load classification data.
-  HSF = HSF.load_classification_data(nrows=ndata_per_temp, ncols=n_x*n_x*n_x*L, 
-        SkipHeader=sh, load_ndata_per_file=classification_data_per_temp)
+  if include_sign :
+    print "Including sign for classification."
+  HSF = HSF.load_classification_data(nrows=ndata_per_temp, ncols=n_x*n_x*n_x*L,
+        SkipHeader=sh, load_ndata_per_file=classification_data_per_temp, include_sign=include_sign,make_spin_down_negative=True)
 
 
 
@@ -768,7 +793,7 @@ if not(slow_learning) and perform_classification_with_label and not(model_saving
 
 # Classification on raw data --------------------------------------------------------
 
-elif not(slow_learning) and not(model_saving_criteria_not_met) :
+elif not(slow_learning) and not(model_saving_criteria_not_met) and HSF.classification.signs == [] :
 
   # First column : Temperature
   # Second column: Average classified output of the second neuron
@@ -789,6 +814,46 @@ elif not(slow_learning) and not(model_saving_criteria_not_met) :
   Table[:,1] = Table[:,1]/Table[:,-1].astype('float')
   # Normalized output of the first neuron
   Table[:,2] = 1.0-Table[:,1]
+
+  np.savetxt(filename_classified, Table)
+  print 'Classified result saved as %s.' % filename_classified
+
+elif not(slow_learning) and not(model_saving_criteria_not_met) and HSF.classification.signs != [] :
+
+  # First column  : Temperature
+  # Second column : Average classified output of the second neuron
+  # Third column  : Average classified output of the first neuron
+  # Fourth column : < sign of second neuron output >
+  # Fifth column  : < sign * second neuron output >
+
+  Table = np.zeros(( len(dtau), 7))
+  Table[:,0] = dtau
+
+  n = 0
+  for j in range(len(dtau)) :
+    for i in range(classification_data_per_temp) :
+      Table[j,1] += np.argmax(y_conv.eval(feed_dict={x: HSF.classification.images[n,:].reshape(1,V4d), keep_prob: 1.0}))
+      if HSF.classification.signs[n] > 0 :
+        Table[j,5] += 1
+        # Classified output of the second neuron with positive sign
+        Table[j,3] += np.argmax(y_conv.eval(feed_dict={x: HSF.classification.images[n,:].reshape(1,V4d), keep_prob: 1.0}))
+      else :
+        Table[j,6] -= 1
+        # Classified output of the second neuron with negative sign
+        Table[j,3] += -np.argmax(y_conv.eval(feed_dict={x: HSF.classification.images[n,:].reshape(1,V4d), keep_prob: 1.0}))
+      n += 1
+
+  # Number of data
+  M = (Table[:,5] - Table[:,6]).astype('float')
+  # Normalize the output of the second neuron
+  Table[:,1] = Table[:,1]/M
+  # Normalized output of the first neuron
+  Table[:,2] = 1.0 - Table[:,1]
+
+  # < sigma * observable >
+  Table[:,3] = Table[:,3]/M
+  # < sigma >
+  Table[:,4] = (Table[:,5] + Table[:,6])/M
 
   np.savetxt(filename_classified, Table)
   print 'Classified result saved as %s.' % filename_classified
